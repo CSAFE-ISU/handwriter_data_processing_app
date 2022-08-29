@@ -13,7 +13,7 @@ ui <- shinyUI({
               tags$style(HTML('#save_mask{background-color:#33ADFF} #save_mask:hover{background-color:#3398FF} #save_mask{color:white}'))),
     
     navbarPage(
-      title = "handwriter",
+      title = "handwriter Data Processing Shiny App",
       
       source(file.path("ui", "intro.R"), local = TRUE)$value,
       source(file.path("ui", "preProcess.R"), local = TRUE)$value,
