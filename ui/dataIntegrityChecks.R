@@ -3,12 +3,10 @@
 tabPanel("Data Integrity Checks", 
          sidebarLayout(
            sidebarPanel(width = 4,
-                        h2("Data Integrity Checks"),
-                        br(),
-                        h4("Select Folder:")
+                        shinyDirButton("dir", "Input directory", "Upload", FALSE),
                        ),
            mainPanel(width = 8,
-                     span(textOutput("error"), style="color:red")
+                     verbatimTextOutput("dir", placeholder = TRUE)  
            )
          ),
 )
