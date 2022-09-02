@@ -4,29 +4,32 @@
 
 #UPLOAD BOX
 observeEvent(input$upload, {
+  # update upload_path
   if (length(input$upload$datapath)){
     values$upload_path <- input$upload$datapath
   }
-  values$plot_type <- ''
   
+  # initialize
+  values$plot_type <- ''
   values$uploaded_image <- NULL
   
+  # read image
   if(endsWith(input$upload$datapath, "png")){
     values$uploaded_image <- image_read(input$upload$datapath)
-    
     values$image <- values$uploaded_image
     info <- image_info(values$image)
   }else if(endsWith(input$plot_upload$datapath, "RData") || endsWith(input$plot_upload$datapath, "rda")){
     image_with_mask <- load(input$upload$datapath)
     values$uploaded_image <- image_read(magick_image)
-    
     values$image <- values$uploaded_image
     info <- image_info(values$image)
   }
   
-  values$dimensions <- paste0(info$width, 'x', info$height)
+  # update current document info
   values$image_name <- input$upload$name
-  
+  values$dimensions <- paste0(info$width, 'x', info$height)
+  values$qr <- qr_scan(values$image)$values$value
+
   #Clean up
   values$crop_list <- list(values$image)
   values$mask_list_df <- values$mask_list_df[0,]
@@ -35,6 +38,7 @@ observeEvent(input$upload, {
 #DOCUMENT NAME AND DIMS DISPLAYED
 output$image_name <- renderText({paste0("Name: ", values$image_name)})
 output$dimensions <- renderText({paste0("Dimensions: ", values$dimensions)})
+output$qr <- renderText({paste0("QR Code: ", values$qr)})
 
 #ROTATE LEFT
 observeEvent(input$left, {

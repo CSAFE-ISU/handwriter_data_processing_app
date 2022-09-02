@@ -1,5 +1,6 @@
 #Shiny handwriter
 # devtools::install_github("CSAFE-ISU/handwriter")
+# devtools::install_github("brianwdavis/quadrangle", INSTALL_opts = "--no-multiarch")
 
 #devtools::load_all(".")
 library(magick)
@@ -11,6 +12,7 @@ library(shinyFiles)
 library(DT)
 library(stringr)
 library(dplyr)
+library(quadrangle)
 
 print(paste0('working in: ', getwd()))
 
