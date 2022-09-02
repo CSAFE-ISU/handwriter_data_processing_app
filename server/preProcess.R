@@ -12,13 +12,6 @@ observeEvent(input$upload, {
   # reset
   values$plot_type <- ''
   values$uploaded_image <- NULL
-  values$qr <- NULL
-  values$doc_type <- NULL
-  values$writer <- NULL
-  values$session <- NULL
-  values$prompt <- NULL
-  values$repetition <- NULL
-  values$initials <- NULL
   
   # read image
   if(endsWith(input$upload$datapath, "png")){
@@ -33,6 +26,12 @@ observeEvent(input$upload, {
   }
   
   # read QR code and get document info
+  values$doc_type <- NULL
+  values$writer <- NULL
+  values$session <- NULL
+  values$prompt <- NULL
+  values$repetition <- NULL
+  values$initials <- NULL
   values$qr <- quadrangle::qr_scan(values$image)$values$value
   splitQR(values$qr)
   
@@ -56,8 +55,10 @@ splitQR <- function(qr){
   
   # grab additional survey info. qr string format: surveys/w0001/survey1
   if (values$doc_type == "surveys"){
+    # change to singular
+    values$doc_type <- "survey"
     # grab session
-    values$session = as.numeric(gsub(".*?([0-9]+).*", "\\1", qr_split[3]))
+    values$session <- as.numeric(gsub(".*?([0-9]+).*", "\\1", qr_split[3]))
   }
   
   # graph additional writer info. qr string format: writing/w0001/s01/pWOZ_r1
@@ -74,6 +75,8 @@ splitQR <- function(qr){
   
   # grab addition signatures info. qr string format: signatures/w0001/JE
   if (values$doc_type == "signatures"){
+    # change to singular
+    values$doc_type <- "signature"
     # grab initials
     values$initials = qr_split[3]
   }
@@ -83,7 +86,7 @@ splitQR <- function(qr){
 output$image_name <- renderText({paste0("Name: ", values$image_name)})
 output$dimensions <- renderText({paste0("Dimensions: ", values$dimensions)})
 output$qr <- renderText({paste0("QR Code: ", values$qr)})
-output$doc_type <- renderText({paste0("Type: ", values$doc_type)})
+output$doc_type <- renderText({paste0("Document Type: ", values$doc_type)})
 output$writer <- renderText({paste0("Writer: ", values$writer)})
 output$session <- renderText({paste0("Session: ", values$session)})
 output$prompt <- renderText({paste0("Prompt: ", values$prompt)})

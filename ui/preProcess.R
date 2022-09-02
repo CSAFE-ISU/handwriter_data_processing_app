@@ -12,9 +12,19 @@ tabPanel("Pre-process",
                         fluidRow(column(width=11, offset=1, textOutput("doc_type"))),
                         fluidRow(column(width=11, offset=1, textOutput("writer"))),
                         fluidRow(column(width=11, offset=1, textOutput("session"))),
-                        fluidRow(column(width=11, offset=1, textOutput("prompt"))),
-                        fluidRow(column(width=11, offset=1, textOutput("repetition"))),
-                        fluidRow(column(width=11, offset=1, textOutput("initials"))),
+                        
+                        # Only show this panel if the doc type is a prompt
+                        conditionalPanel(
+                          condition = "output.doc_type == 'Document Type: writing'",
+                          fluidRow(column(width=11, offset=1, textOutput("prompt"))),
+                          fluidRow(column(width=11, offset=1, textOutput("repetition"))),
+                          ),
+                        # Only show this panel if the doc type is a signature
+                        conditionalPanel(
+                          condition = "output.doc_type == 'Document Type: signature'",
+                          fluidRow(column(width=11, offset=1, textOutput("initials"))),
+                        ),
+                        
                         br(),
                         fileInput("upload", "Choose a new document to pre-process", accept = c('image/png')),
                         hr(),
