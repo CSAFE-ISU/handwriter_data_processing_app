@@ -34,7 +34,7 @@ server <- function(input, output, session) {
   
   values$dimensions <- paste0(info$width, 'x', info$height)
   
-  values$qr <- "none"
+  values$qr <- NULL
   
   #========================================================
   #================ SOURCE SERVER CODE ====================

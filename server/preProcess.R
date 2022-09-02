@@ -9,9 +9,16 @@ observeEvent(input$upload, {
     values$upload_path <- input$upload$datapath
   }
   
-  # initialize
+  # reset
   values$plot_type <- ''
   values$uploaded_image <- NULL
+  values$qr <- NULL
+  values$doc_type <- NULL
+  values$writer <- NULL
+  values$session <- NULL
+  values$prompt <- NULL
+  values$repetition <- NULL
+  values$initials <- NULL
   
   # read image
   if(endsWith(input$upload$datapath, "png")){
@@ -25,20 +32,63 @@ observeEvent(input$upload, {
     info <- image_info(values$image)
   }
   
+  # read QR code and get document info
+  values$qr <- quadrangle::qr_scan(values$image)$values$value
+  splitQR(values$qr)
+  
   # update current document info
   values$image_name <- input$upload$name
   values$dimensions <- paste0(info$width, 'x', info$height)
-  values$qr <- qr_scan(values$image)$values$value
 
   #Clean up
   values$crop_list <- list(values$image)
   values$mask_list_df <- values$mask_list_df[0,]
 })
 
+#SPLIT QR CODE 
+splitQR <- function(qr){
+  # split qr string
+  qr_split <- unlist(stringr::str_split(qr, "/"))
+  
+  # grab doc type (surveys, writing, or signatures) and writer
+  values$doc_type = qr_split[1]
+  values$writer = qr_split[2]
+  
+  # grab additional survey info. qr string format: surveys/w0001/survey1
+  if (values$doc_type == "surveys"){
+    # grab session
+    values$session = as.numeric(gsub(".*?([0-9]+).*", "\\1", qr_split[3]))
+  }
+  
+  # graph additional writer info. qr string format: writing/w0001/s01/pWOZ_r1
+  if (values$doc_type == "writing"){ 
+    # grab session number
+    values$session = as.numeric(gsub(".*?([0-9]+).*", "\\1", qr_split[3]))
+    # split prompt and repetition
+    prompt_rep = unlist(stringr::str_split(qr_split[4], "_"))
+    # grab prompt. drop the "p"
+    values$prompt = stringr::str_replace(prompt_rep[1], "p","")
+    # grab the repetition number
+    values$repetition = as.numeric(gsub(".*?([0-9]+).*", "\\1", prompt_rep[2]))
+  }
+  
+  # grab addition signatures info. qr string format: signatures/w0001/JE
+  if (values$doc_type == "signatures"){
+    # grab initials
+    values$initials = qr_split[3]
+  }
+}
+
 #DOCUMENT NAME AND DIMS DISPLAYED
 output$image_name <- renderText({paste0("Name: ", values$image_name)})
 output$dimensions <- renderText({paste0("Dimensions: ", values$dimensions)})
 output$qr <- renderText({paste0("QR Code: ", values$qr)})
+output$doc_type <- renderText({paste0("Type: ", values$doc_type)})
+output$writer <- renderText({paste0("Writer: ", values$writer)})
+output$session <- renderText({paste0("Session: ", values$session)})
+output$prompt <- renderText({paste0("Prompt: ", values$prompt)})
+output$repetition <- renderText({paste0("Repetition: ", values$repetition)})
+output$initials <- renderText({paste0("Initials: ", values$initials)})
 
 #ROTATE LEFT
 observeEvent(input$left, {
