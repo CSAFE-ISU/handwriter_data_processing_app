@@ -16,7 +16,7 @@ server <- function(input, output, session) {
   values <- reactiveValues()
   
   #Read in sample image & Set up basic values
-  image <- image_read("images/samplewriting.png")
+  image <- magick::image_read("images/samplewriting.png")
   values$upload_path <- "images/samplewriting.png"
   values$current_path <- "images/samplewriting.png"
   values$image_name <- 'images/samplewriting.png'
@@ -25,7 +25,7 @@ server <- function(input, output, session) {
   mask_list_df <- data.frame(matrix(ncol=6, nrow=0))
   colnames(mask_list_df) <- c('xmin', 'xmax', 'ymin', 'ymax', 'xrange', 'yrange')
   
-  values$image <- image
+  values$image <- image 
   values$uploaded_image <- image
   values$info <- info
   
@@ -34,6 +34,7 @@ server <- function(input, output, session) {
   
   values$dimensions <- paste0(info$width, 'x', info$height)
   
+  values$qr <- NULL
   
   #========================================================
   #================ SOURCE SERVER CODE ====================

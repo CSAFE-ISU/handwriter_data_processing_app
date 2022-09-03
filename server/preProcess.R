@@ -4,37 +4,131 @@
 
 #UPLOAD BOX
 observeEvent(input$upload, {
+  # update upload_path
   if (length(input$upload$datapath)){
     values$upload_path <- input$upload$datapath
   }
-  values$plot_type <- ''
   
+  # reset
+  values$plot_type <- ''
   values$uploaded_image <- NULL
   
+  # read image
   if(endsWith(input$upload$datapath, "png")){
     values$uploaded_image <- image_read(input$upload$datapath)
-    
     values$image <- values$uploaded_image
     info <- image_info(values$image)
   }else if(endsWith(input$plot_upload$datapath, "RData") || endsWith(input$plot_upload$datapath, "rda")){
     image_with_mask <- load(input$upload$datapath)
     values$uploaded_image <- image_read(magick_image)
-    
     values$image <- values$uploaded_image
     info <- image_info(values$image)
   }
   
-  values$dimensions <- paste0(info$width, 'x', info$height)
-  values$image_name <- input$upload$name
+  # read QR code and get document info
+  values$doc_type <- NULL
+  values$writer <- NULL
+  values$session <- NULL
+  values$prompt <- NULL
+  values$repetition <- NULL
+  values$initials <- NULL
+  values$qr <- quadrangle::qr_scan(values$image)$values$value  # read qr code
+  # extract writer, session, etc. if qr code isn't empty
+  if (length(values$qr) != 0){
+    splitQR(values$qr)
+  }
   
+  # update current document info
+  values$image_name <- input$upload$name
+  values$dimensions <- paste0(info$width, 'x', info$height)
+
   #Clean up
   values$crop_list <- list(values$image)
   values$mask_list_df <- values$mask_list_df[0,]
 })
 
-#DOCUMENT NAME AND DIMS DISPLAYED
+#SPLIT QR CODE 
+splitQR <- function(qr){
+  # split qr string
+  qr_split <- unlist(stringr::str_split(qr, "/"))
+  
+  # grab doc type (surveys, writing, or signatures) and writer
+  values$doc_type = qr_split[1]
+  values$writer = qr_split[2]
+  
+  # grab additional survey info. qr string format: surveys/w0001/survey1
+  if (values$doc_type == "surveys"){
+    # change to singular
+    values$doc_type <- "survey"
+    # grab session
+    values$session <- as.numeric(gsub(".*?([0-9]+).*", "\\1", qr_split[3]))
+  }
+  
+  # graph additional writer info. qr string format: writing/w0001/s01/pWOZ_r1
+  if (values$doc_type == "writing"){ 
+    # grab session number
+    values$session = as.numeric(gsub(".*?([0-9]+).*", "\\1", qr_split[3]))
+    # split prompt and repetition
+    prompt_rep = unlist(stringr::str_split(qr_split[4], "_"))
+    # grab prompt. drop the "p"
+    values$prompt = stringr::str_replace(prompt_rep[1], "p","")
+    # grab the repetition number
+    values$repetition = as.numeric(gsub(".*?([0-9]+).*", "\\1", prompt_rep[2]))
+  }
+  
+  # grab addition signatures info. qr string format: signatures/w0001/JE
+  if (values$doc_type == "signatures"){
+    # change to singular
+    values$doc_type <- "signature"
+    # grab initials
+    values$initials = qr_split[3]
+  }
+}
+
+#DOCUMENT NAME AND DIMENSIONS
 output$image_name <- renderText({paste0("Name: ", values$image_name)})
 output$dimensions <- renderText({paste0("Dimensions: ", values$dimensions)})
+#QR CODE INFO
+output$qr <- renderText({paste0("QR Code: ", values$qr)})
+output$doc_type <- renderText({paste0("Document Type: ", values$doc_type)})
+output$writer <- renderText({paste0("Writer: ", values$writer)})
+output$session <- renderText({paste0("Session: ", values$session)})
+output$prompt <- renderText({paste0("Prompt: ", values$prompt)})
+output$repetition <- renderText({paste0("Repetition: ", values$repetition)})
+output$initials <- renderText({paste0("Initials: ", values$initials)})
+
+#BUTTON: SELECT QR CODE
+observeEvent(input$select_qr, {
+  
+  if(is.null(input$preprocess_plot_brush)){
+    output$error <- renderText({"Please manually select the QR code."})
+  }else{ 
+    output$error <- renderText({""})
+    
+    xmin = input$preprocess_plot_brush$xmin
+    xmax = input$preprocess_plot_brush$xmax
+    ymin = input$preprocess_plot_brush$ymin
+    ymax = input$preprocess_plot_brush$ymax
+    
+    xrange = xmax - xmin
+    yrange = ymax - ymin
+    
+    # crop qr code
+    if(!is.null(xrange) && !is.null(yrange)){
+      values$qr_image = image_crop(values$image, paste(xrange,'x', yrange, '+', xmin, '+', ymin))
+    }
+    
+    # write qr code to temp file
+    image_write(values$qr_image, file.path("images", "tmp_qr.png"))
+    values$qr_path <- file.path("images", "tmp_qr.png")
+    
+    # read qr code from temp file
+    values$qr <- quadrangle::qr_scan(values$qr_path)$values$value  # read qr code
+    # extract writer, session, etc. if qr code isn't empty
+    if (length(values$qr) != 0){
+      splitQR(values$qr)
+    }
+  }})
 
 #ROTATE LEFT
 observeEvent(input$left, {
