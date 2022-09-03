@@ -17,12 +17,12 @@ observeEvent(input$upload, {
   if(endsWith(input$upload$datapath, "png")){
     values$uploaded_image <- image_read(input$upload$datapath)
     values$image <- values$uploaded_image
-    info <- image_info(values$image)
+    values$info <- image_info(values$image)
   }else if(endsWith(input$plot_upload$datapath, "RData") || endsWith(input$plot_upload$datapath, "rda")){
     image_with_mask <- load(input$upload$datapath)
     values$uploaded_image <- image_read(magick_image)
     values$image <- values$uploaded_image
-    info <- image_info(values$image)
+    values$info <- image_info(values$image)
   }
   
   # read QR code and get document info
@@ -40,7 +40,7 @@ observeEvent(input$upload, {
   
   # update current document info
   values$image_name <- input$upload$name
-  values$dimensions <- paste0(info$width, 'x', info$height)
+  values$dimensions <- paste0(values$info$width, 'x', values$info$height)
 
   #Clean up
   values$crop_list <- list(values$image)
@@ -149,10 +149,15 @@ observeEvent(input$reset_crop, {
   values$crop_list <- list(values$image)
   
   #Reset dimensions
-  info <- image_info(values$image)
-  values$dimensions <- paste0(info$width, 'x', info$height)
+  values$info <- image_info(values$image)
+  values$dimensions <- paste0(values$info$width, 'x', values$info$height)
   shinyjs::disable("reset_crop"); shinyjs::disable("undo_crop")
   values$current_path <- values$upload_path
+  
+  #Reset session values
+  values$session_width = session$clientData$output_preprocess_plot_width
+  values$session_scale = values$session_width / values$info$width
+  values$session_inv_scale = values$info$width / values$session_width
 })
 
 #BUTTON: UNDO CROP
@@ -162,11 +167,16 @@ observeEvent(input$undo_crop, {
   values$crop_list <- head(values$crop_list, -1)
   
   #Reset dimensions
-  info <- image_info(values$image)
-  values$dimensions <- paste0(info$width, 'x', info$height)
+  values$info <- image_info(values$image)
+  values$dimensions <- paste0(values$info$width, 'x', values$info$height)
   if(length(values$crop_list) == 1){
     shinyjs::disable("reset_crop"); shinyjs::disable("undo_crop")
   }
+  
+  #Reset session values
+  values$session_width = session$clientData$output_preprocess_plot_width
+  values$session_scale = values$session_width / values$info$width
+  values$session_inv_scale = values$info$width / values$session_width
   
   image_write(values$image, "tmp.png"); values$current_path <- "tmp.png"
   
@@ -180,10 +190,10 @@ observeEvent(input$crop, {
   }else{ 
     output$error <- renderText({""})
     
-    xmin = input$preprocess_plot_brush$xmin
-    xmax = input$preprocess_plot_brush$xmax
-    ymin = input$preprocess_plot_brush$ymin
-    ymax = input$preprocess_plot_brush$ymax
+    xmin = values$session_inv_scale*input$preprocess_plot_brush$xmin
+    xmax = values$session_inv_scale*input$preprocess_plot_brush$xmax
+    ymin = values$session_inv_scale*input$preprocess_plot_brush$ymin
+    ymax = values$session_inv_scale*input$preprocess_plot_brush$ymax
     
     xrange = xmax - xmin
     yrange = ymax - ymin
@@ -251,6 +261,26 @@ observeEvent(input$mask, {
     message(values$mask_list_df)
   }})
 
+#RENDER WIDTH
+output$session_width <- renderText({paste0("Session width: ", values$session_width)})
+output$session_scale <- renderText({paste0("Session scale: ", values$session_scale)})
+
+#RENDER PLOT
+output$preprocess_plot <- renderImage({
+  output$error <- renderText({""})
+  
+  values$session_width = session$clientData$output_preprocess_plot_width
+  values$session_scale = values$session_width / values$info$width
+  values$session_inv_scale = values$info$width / values$session_width
+  
+  tmp <- values$image %>%
+    image_rotate(input$rotation) %>%
+    image_resize(geometry_size_pixels(width=session$clientData$output_preprocess_plot_width)) %>%
+    image_write(tempfile(fileext='png'), format = 'png')
+  
+  list(src = tmp, contentType = "image/png", width=session$clientData$output_preprocess_plot_width)
+}, deleteFile = FALSE)
+
 #RENDER PLOT WITH MASK
 output$preprocess_plot_masked <- renderImage({
   tmp = values$image
@@ -277,20 +307,6 @@ output$preprocess_plot_masked <- renderImage({
   # Return a list
   list(src = tmp, contentType = "image/png")
 }, deleteFile = FALSE)
-
-#RENDER PLOT
-output$preprocess_plot <- renderImage({
-  output$error <- renderText({""})
-  
-  tmp <- values$image %>%
-    image_rotate(input$rotation) %>%
-    image_resize(input$size) %>%
-    image_write(tempfile(fileext='png'), format = 'png')
-  
-  # Return a list
-  list(src = tmp, contentType = "image/png")
-}, deleteFile = FALSE)
-
 
 #SAVE MASK 
 output$save_mask <- downloadHandler(
@@ -326,7 +342,6 @@ output$save_mask <- downloadHandler(
     }
   }
 )
-
 
 #SAVE DOCUMENT
 output$save_document <- downloadHandler(
