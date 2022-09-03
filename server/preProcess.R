@@ -85,9 +85,10 @@ splitQR <- function(qr){
   }
 }
 
-#DOCUMENT NAME AND DIMS DISPLAYED
+#DOCUMENT NAME AND DIMENSIONS
 output$image_name <- renderText({paste0("Name: ", values$image_name)})
 output$dimensions <- renderText({paste0("Dimensions: ", values$dimensions)})
+#QR CODE INFO
 output$qr <- renderText({paste0("QR Code: ", values$qr)})
 output$doc_type <- renderText({paste0("Document Type: ", values$doc_type)})
 output$writer <- renderText({paste0("Writer: ", values$writer)})
@@ -95,6 +96,39 @@ output$session <- renderText({paste0("Session: ", values$session)})
 output$prompt <- renderText({paste0("Prompt: ", values$prompt)})
 output$repetition <- renderText({paste0("Repetition: ", values$repetition)})
 output$initials <- renderText({paste0("Initials: ", values$initials)})
+
+#BUTTON: SELECT QR CODE
+observeEvent(input$select_qr, {
+  
+  if(is.null(input$preprocess_plot_brush)){
+    output$error <- renderText({"Please manually select the QR code."})
+  }else{ 
+    output$error <- renderText({""})
+    
+    xmin = input$preprocess_plot_brush$xmin
+    xmax = input$preprocess_plot_brush$xmax
+    ymin = input$preprocess_plot_brush$ymin
+    ymax = input$preprocess_plot_brush$ymax
+    
+    xrange = xmax - xmin
+    yrange = ymax - ymin
+    
+    # crop qr code
+    if(!is.null(xrange) && !is.null(yrange)){
+      values$qr_image = image_crop(values$image, paste(xrange,'x', yrange, '+', xmin, '+', ymin))
+    }
+    
+    # write qr code to temp file
+    image_write(values$qr_image, file.path("images", "tmp_qr.png"))
+    values$qr_path <- file.path("images", "tmp_qr.png")
+    
+    # read qr code from temp file
+    values$qr <- quadrangle::qr_scan(values$qr_path)$values$value  # read qr code
+    # extract writer, session, etc. if qr code isn't empty
+    if (length(values$qr) != 0){
+      splitQR(values$qr)
+    }
+  }})
 
 #ROTATE LEFT
 observeEvent(input$left, {

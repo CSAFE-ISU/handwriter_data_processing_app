@@ -24,6 +24,7 @@ tabPanel("Pre-process",
                           condition = "output.doc_type == 'Document Type: signature'",
                           fluidRow(column(width=11, offset=1, textOutput("initials"))),
                         ),
+                        fluidRow(column(width=11, offset=1, actionButton("select_qr", "Select QR code manually"))),
                         
                         br(),
                         fileInput("upload", "Choose a new document to pre-process", accept = c('image/png')),
