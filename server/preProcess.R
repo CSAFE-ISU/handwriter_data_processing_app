@@ -32,8 +32,11 @@ observeEvent(input$upload, {
   values$prompt <- NULL
   values$repetition <- NULL
   values$initials <- NULL
-  values$qr <- quadrangle::qr_scan(values$image)$values$value
-  splitQR(values$qr)
+  values$qr <- quadrangle::qr_scan(values$image)$values$value  # read qr code
+  # extract writer, session, etc. if qr code isn't empty
+  if (length(values$qr) != 0){
+    splitQR(values$qr)
+  }
   
   # update current document info
   values$image_name <- input$upload$name
