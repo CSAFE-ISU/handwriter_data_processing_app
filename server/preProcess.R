@@ -105,10 +105,10 @@ observeEvent(input$select_qr, {
   }else{ 
     output$error <- renderText({""})
     
-    xmin = input$preprocess_plot_brush$xmin
-    xmax = input$preprocess_plot_brush$xmax
-    ymin = input$preprocess_plot_brush$ymin
-    ymax = input$preprocess_plot_brush$ymax
+    xmin = values$session_inv_scale*input$preprocess_plot_brush$xmin
+    xmax = values$session_inv_scale*input$preprocess_plot_brush$xmax
+    ymin = values$session_inv_scale*input$preprocess_plot_brush$ymin
+    ymax = values$session_inv_scale*input$preprocess_plot_brush$ymax
     
     xrange = xmax - xmin
     yrange = ymax - ymin
