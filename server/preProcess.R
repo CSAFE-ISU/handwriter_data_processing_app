@@ -47,7 +47,7 @@ observeEvent(input$upload, {
   values$mask_list_df <- values$mask_list_df[0,]
 })
 
-#SPLIT QR CODE 
+#HELPER FUNCTION: SPLIT QR CODE 
 splitQR <- function(qr){
   # split qr string
   qr_split <- unlist(stringr::str_split(qr, "/"))
@@ -85,10 +85,11 @@ splitQR <- function(qr){
   }
 }
 
-#DOCUMENT NAME AND DIMENSIONS
+#RENDER: DOCUMENT NAME AND DIMENSIONS
 output$image_name <- renderText({paste0("Name: ", values$image_name)})
 output$dimensions <- renderText({paste0("Dimensions: ", values$dimensions)})
-#QR CODE INFO
+
+#RENDER: QR CODE INFO
 output$qr <- renderText({paste0("QR Code: ", values$qr)})
 output$doc_type <- renderText({paste0("Document Type: ", values$doc_type)})
 output$writer <- renderText({paste0("Writer: ", values$writer)})
@@ -130,13 +131,13 @@ observeEvent(input$select_qr, {
     }
   }})
 
-#ROTATE LEFT
+#BUTTON: ROTATE LEFT
 observeEvent(input$left, {
   output$error <- renderText({""})
   updateSliderInput(session, "rotation", value = input$rotation - 1)
 })
 
-#ROTATE RIGHT
+#BUTTON: ROTATE RIGHT
 observeEvent(input$right, {
   output$error <- renderText({""})
   updateSliderInput(session, "rotation", value = input$rotation + 1)
@@ -190,6 +191,8 @@ observeEvent(input$crop, {
   }else{ 
     output$error <- renderText({""})
     
+    # Image scaled to fit to window when image rendered. Multiply by inverse
+    # scale factor to select box on full-size image
     xmin = values$session_inv_scale*input$preprocess_plot_brush$xmin
     xmax = values$session_inv_scale*input$preprocess_plot_brush$xmax
     ymin = values$session_inv_scale*input$preprocess_plot_brush$ymin
@@ -210,7 +213,7 @@ observeEvent(input$crop, {
     message(paste0('crop_list:', values$crop_list, '\n'))
     
     shinyjs::enable("reset_crop"); shinyjs::enable("undo_crop")
-    image_write(values$image, "tmp.png"); values$current_path <- "tmp.png"
+    image_write(values$image, file.path("images", "tmp.png")); values$current_path <- "tmp.png"
   }})
 
 #BUTTON: RESET MASK
