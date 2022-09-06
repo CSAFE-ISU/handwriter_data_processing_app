@@ -33,9 +33,12 @@ observeEvent(input$upload, {
   values$repetition <- NULL
   values$initials <- NULL
   values$qr <- quadrangle::qr_scan(values$image)$values$value  # read qr code
-  # extract writer, session, etc. if qr code isn't empty
+  # if qr code isn't empty
   if (length(values$qr) != 0){
+    # get info from qr code
     splitQR(values$qr)
+    # format document names
+    makeDocNames()
   }
   
   # update current document info
@@ -85,6 +88,40 @@ splitQR <- function(qr){
   }
 }
 
+#HELPER FUNCTION: FORMAT DOC NAMES
+makeDocNames <- function(){
+  # format survey
+  if (values$doc_type == "survey"){
+    # scan
+    values$scan_name <- paste0(values$writer,"_survey",values$session, ".png")
+    values$scan_path <- file.path(values$main_dir, "Stage3_Survey_Data", "Sorted", values$writer, values$scan_name)
+  } 
+  
+  # format writing
+  if (values$doc_type == "writing"){
+    # scan
+    session <- stringr::str_pad(values$session, width = 2, side = "left", pad = 0)
+    repetition <- stringr::str_pad(values$repetition, width = 2, side = "left", pad = 0)
+    values$scan_name <- paste0(values$writer,"_s", session, "_p", values$prompt, "_r", repetition, "_scan.png")
+    values$scan_path <- file.path(values$main_dir, "Stage2_Sorted", "Writing", values$writer, values$scan_name)
+    
+    # cropped
+    values$crop_name <- paste0(values$writer,"_s", session, "_p", values$prompt, "_r", repetition, ".png")
+    values$crop_path <- file.path(values$main_dir, "Stage4_Cropped", "Writing", values$writer, values$crop_name)
+  }
+  
+  # format signature scan
+  if (values$doc_type == "signature"){
+    # scan
+    values$scan_name <- paste0(values$writer,"_", values$initials, "_scan.png")
+    values$scan_path <- file.path(values$main_dir, "Stage2_Sorted", "Signatures", values$writer, values$scan_name)
+    
+    # cropped
+    values$crop_name <- paste0(values$writer,"_", values$initials, ".png")
+    values$crop_path <- file.path(values$main_dir, "Stage4_Cropped", "Signatures", values$writer, values$scan_name)
+  }
+}
+
 #RENDER: DOCUMENT NAME AND DIMENSIONS
 output$image_name <- renderText({paste0("Name: ", values$image_name)})
 output$dimensions <- renderText({paste0("Dimensions: ", values$dimensions)})
@@ -97,6 +134,10 @@ output$session <- renderText({paste0("Session: ", values$session)})
 output$prompt <- renderText({paste0("Prompt: ", values$prompt)})
 output$repetition <- renderText({paste0("Repetition: ", values$repetition)})
 output$initials <- renderText({paste0("Initials: ", values$initials)})
+
+#RENDER: DOCUMENT NAMES
+output$scan_name <- renderText({paste0("Scan name: ", values$scan_name)})
+output$scan_path <- renderText({paste0("Scan path: ", values$scan_path)})
 
 #BUTTON: SELECT QR CODE
 observeEvent(input$select_qr, {
@@ -128,6 +169,8 @@ observeEvent(input$select_qr, {
     # extract writer, session, etc. if qr code isn't empty
     if (length(values$qr) != 0){
       splitQR(values$qr)
+      # format document names
+      makeDocNames()
     }
   }})
 
@@ -344,11 +387,51 @@ output$save_mask <- downloadHandler(
 )
 
 #SAVE: DOCUMENT
-output$save_document <- downloadHandler(
-  filename = paste0("preprocessed_", values$image_name), #THIS DOES NOT USE AN UPDATED IMAGE_NAME VARIABLE. IDK WHY
-  contentType = "image/png",
-  content = function(file) {
-    message(values$image_name)
-    file.copy(tmpfile <- values$image %>% image_rotate(input$rotation) %>% image_write(tempfile(fileext='png'), format = 'png'), file)
+# output$save_document <- downloadHandler(
+#   filename = paste0("preprocessed_", values$image_name), #THIS DOES NOT USE AN UPDATED IMAGE_NAME VARIABLE. IDK WHY
+#   contentType = "image/png",
+#   content = function(file) {
+#     message(values$image_name)
+#     file.copy(tmpfile <- values$image %>% image_rotate(input$rotation) %>% image_write(tempfile(fileext='png'), format = 'png'), file)
+#   }
+# )
+
+#SAVE: SCAN
+observeEvent(input$save_scan, {
+  # Return error if scan already exists. Otherwise, save the scan.
+  if(file.exists(values$scan_path)){
+    output$error <- renderText({paste0("Scan already exists: ", values$scan_path, "\n Manually delete scan if you want to save an updated version.")})
+  }else{ 
+    output$error <- renderText({""})
+    
+    # make writer folder for scan
+    if (!dir.exists(dirname(values$scan_path))){
+      dir.create(dirname(values$scan_path))
+    }
+    
+    # save original scan
+    values$uploaded_image %>% 
+      image_rotate(input$rotation) %>% 
+      image_write(path=values$scan_path, format = 'png')
   }
-)
+})
+
+#SAVE: CROPPED
+observeEvent(input$save_crop, {
+  # Return error if cropped document already exists. Otherwise, save the cropped document.
+  if(file.exists(values$crop_path)){
+    output$error <- renderText({paste0("Cropped document already exists: ", values$crop_path, "\n Manually delete scan if you want to save an updated version.")})
+  }else{ 
+    output$error <- renderText({""})
+    
+    # make writer folder for cropped document
+    if (!dir.exists(dirname(values$crop_path))){
+      dir.create(dirname(values$crop_path))
+    }
+    
+    # save original cropped document
+    values$image %>% 
+      image_rotate(input$rotation) %>% 
+      image_write(path=values$crop_path, format = 'png')
+  }
+})
