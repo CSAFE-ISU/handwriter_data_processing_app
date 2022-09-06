@@ -49,8 +49,6 @@ tabPanel("Pre-process",
                      br(),
                      tabsetPanel(id = "plotset",
                                  tabPanel("Current Document",
-                                          textOutput("session_width"),
-                                          textOutput("session_scale"),
                                           br(),
                                           imageOutput("preprocess_plot", 
                                                       brush = brushOpts(id = "preprocess_plot_brush", resetOnNew = TRUE))

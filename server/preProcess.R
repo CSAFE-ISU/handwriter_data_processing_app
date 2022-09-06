@@ -2,7 +2,7 @@
 #=================== PREPROCESSING =======================
 #=========================================================
 
-#UPLOAD BOX
+#UPLOAD: DOCUMENT
 observeEvent(input$upload, {
   # update upload_path
   if (length(input$upload$datapath)){
@@ -264,11 +264,7 @@ observeEvent(input$mask, {
     message(values$mask_list_df)
   }})
 
-#RENDER WIDTH
-output$session_width <- renderText({paste0("Session width: ", values$session_width)})
-output$session_scale <- renderText({paste0("Session scale: ", values$session_scale)})
-
-#RENDER PLOT
+#RENDER: IMAGE
 output$preprocess_plot <- renderImage({
   output$error <- renderText({""})
   
@@ -276,6 +272,7 @@ output$preprocess_plot <- renderImage({
   values$session_scale = values$session_width / values$info$width
   values$session_inv_scale = values$info$width / values$session_width
   
+  # make temp image for display
   tmp <- values$image %>%
     image_rotate(input$rotation) %>%
     image_resize(geometry_size_pixels(width=session$clientData$output_preprocess_plot_width)) %>%
@@ -284,7 +281,7 @@ output$preprocess_plot <- renderImage({
   list(src = tmp, contentType = "image/png", width=session$clientData$output_preprocess_plot_width)
 }, deleteFile = FALSE)
 
-#RENDER PLOT WITH MASK
+#RENDER: IMAGE WITH MASK
 output$preprocess_plot_masked <- renderImage({
   tmp = values$image
   if(nrow(values$mask_list_df) == 0){
@@ -311,7 +308,7 @@ output$preprocess_plot_masked <- renderImage({
   list(src = tmp, contentType = "image/png")
 }, deleteFile = FALSE)
 
-#SAVE MASK 
+#SAVE: MASK 
 output$save_mask <- downloadHandler(
   filename <- function(){
     paste("image_masked.RData")
@@ -346,7 +343,7 @@ output$save_mask <- downloadHandler(
   }
 )
 
-#SAVE DOCUMENT
+#SAVE: DOCUMENT
 output$save_document <- downloadHandler(
   filename = paste0("preprocessed_", values$image_name), #THIS DOES NOT USE AN UPDATED IMAGE_NAME VARIABLE. IDK WHY
   contentType = "image/png",
