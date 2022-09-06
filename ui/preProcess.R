@@ -29,8 +29,6 @@ tabPanel("Pre-process",
                         br(),
                         fileInput("upload", "Choose a new document to pre-process", accept = c('image/png')),
                         hr(),
-                        radioButtons(inputId = "fit_image", label = "Fit to window", choices = c("width", "height"), selected = "width", inline = TRUE),
-                        hr(),
                         fluidRow(
                           column(width = 1, br(), actionButton("left", label = icon("angle-double-left", "fa-2xs"))),
                           column(width = 8, offset = 1, sliderInput("rotation", "Rotate:", min = -180, max = 180, value = 0)), 
