@@ -24,6 +24,8 @@ tabPanel("Pre-process",
                           condition = "output.doc_type == 'Document Type: signature'",
                           fluidRow(column(width=11, offset=1, textOutput("initials"))),
                         ),
+                        fluidRow(column(width=11, offset=1, textOutput("scan_name"))),
+                        fluidRow(column(width=11, offset=1, textOutput("scan_path"))),
                         fluidRow(column(width=11, offset=1, actionButton("select_qr", "Select QR code manually"))),
                         
                         br(),
@@ -42,6 +44,14 @@ tabPanel("Pre-process",
                         ),
                         hr(),
                         fluidRow(
+                          column(width = 2, offset = 6, actionButton("save_scan", "Save Original Scan")),
+                        ),
+                        hr(),
+                        fluidRow(
+                          column(width = 2, offset = 6, actionButton("save_crop", "Save Cropped Document")),
+                        ),
+                        hr(),
+                        fluidRow(
                           column(width = 2, offset = 6, downloadButton("save_document", "Save Document")),
                         )),
            mainPanel(width = 8,
@@ -50,7 +60,8 @@ tabPanel("Pre-process",
                      tabsetPanel(id = "plotset",
                                  tabPanel("Current Document",
                                           br(),
-                                          imageOutput("preprocess_plot", brush = brushOpts(id = "preprocess_plot_brush", resetOnNew = TRUE))
+                                          imageOutput("preprocess_plot", 
+                                                      brush = brushOpts(id = "preprocess_plot_brush", resetOnNew = TRUE))
                                  ),
                                  tabPanel("Apply Mask",
                                           br(),

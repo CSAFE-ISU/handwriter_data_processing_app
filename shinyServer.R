@@ -15,6 +15,11 @@ server <- function(input, output, session) {
   #Create Reactive Values
   values <- reactiveValues()
   
+  #Get main directory based on OS
+  switch(Sys.info()[['sysname']],
+         Windows = {values$main_dir = "/lss/research/csafe-handwriting-irb/Data_Processing_App_Testing"},
+         Darwin = {values$main_dir = "/Volumes/lss/research/csafe-handwriting-irb/Data_Processing_App_Testing"})
+  
   #Read in sample image & Set up basic values
   image <- magick::image_read("images/samplewriting.png")
   values$upload_path <- "images/samplewriting.png"
