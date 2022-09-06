@@ -42,6 +42,11 @@ server <- function(input, output, session) {
          Windows = {values$main_dir = "/lss/research/csafe-handwriting-irb/Data_Processing_App_Testing"},
          Darwin = {values$main_dir = "/Volumes/lss/research/csafe-handwriting-irb/Data_Processing_App_Testing"})
   
+  # create subdirectory temp in images 
+  if (!dir.exists(file.path("images", "temp"))){
+    dir.create(file.path("images", "temp"))
+  }
+  
   #========================================================
   #================ SOURCE SERVER CODE ====================
   #========================================================
