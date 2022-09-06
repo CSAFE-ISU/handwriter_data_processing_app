@@ -32,8 +32,13 @@ observeEvent(input$upload, {
   values$prompt <- NULL
   values$repetition <- NULL
   values$initials <- NULL
+  values$scan_name <- NULL
+  values$scan_path <- NULL
+  values$crop_name <- NULL
+  values$crop_path <- NULL
+  values$qr_path <- NULL
   values$qr <- quadrangle::qr_scan(values$image)$values$value  # read qr code
-  # if qr code isn't empty
+  # if qr code isn't empty, format doc names
   if (length(values$qr) != 0){
     # get info from qr code
     splitQR(values$qr)
@@ -45,9 +50,9 @@ observeEvent(input$upload, {
   values$image_name <- input$upload$name
   values$dimensions <- paste0(values$info$width, 'x', values$info$height)
 
-  #Clean up
+  # clean up
   values$crop_list <- list(values$image)
-  values$mask_list_df <- values$mask_list_df[0,]
+  values$mask_list_df <- values$mask_list_df[0,]  # keep column names, clear all rows
 })
 
 #HELPER FUNCTION: SPLIT QR CODE 
@@ -95,6 +100,10 @@ makeDocNames <- function(){
     # scan
     values$scan_name <- paste0(values$writer,"_survey",values$session, ".png")
     values$scan_path <- file.path(values$main_dir, "Stage3_Survey_Data", "Sorted", values$writer, values$scan_name)
+    
+    # crop
+    values$crop_name <- NULL
+    values$crop_path <- NULL
   } 
   
   # format writing
@@ -118,11 +127,13 @@ makeDocNames <- function(){
     
     # cropped
     values$crop_name <- paste0(values$writer,"_", values$initials, ".png")
-    values$crop_path <- file.path(values$main_dir, "Stage4_Cropped", "Signatures", values$writer, values$scan_name)
+    values$crop_path <- file.path(values$main_dir, "Stage4_Cropped", "Signatures", values$writer, values$crop_name)
   }
 }
 
 #RENDER: DOCUMENT NAME AND DIMENSIONS
+output$upload_path <- renderText({paste0("Upload path: ", values$upload_path)})
+output$current_path <- renderText({paste0("Current path: ", values$current_path)})
 output$image_name <- renderText({paste0("Name: ", values$image_name)})
 output$dimensions <- renderText({paste0("Dimensions: ", values$dimensions)})
 
@@ -138,6 +149,9 @@ output$initials <- renderText({paste0("Initials: ", values$initials)})
 #RENDER: DOCUMENT NAMES
 output$scan_name <- renderText({paste0("Scan name: ", values$scan_name)})
 output$scan_path <- renderText({paste0("Scan path: ", values$scan_path)})
+
+output$crop_name <- renderText({paste0("Crop name: ", values$crop_name)})
+output$crop_path <- renderText({paste0("Crop path: ", values$crop_path)})
 
 #BUTTON: SELECT QR CODE
 observeEvent(input$select_qr, {
@@ -161,8 +175,8 @@ observeEvent(input$select_qr, {
     }
     
     # write qr code to temp file
-    image_write(values$qr_image, file.path("images", "tmp_qr.png"))
-    values$qr_path <- file.path("images", "tmp_qr.png")
+    image_write(values$qr_image, file.path("images", "temp", "tmp_qr.png"))
+    values$qr_path <- file.path("images", "temp", "tmp_qr.png")
     
     # read qr code from temp file
     values$qr <- quadrangle::qr_scan(values$qr_path)$values$value  # read qr code
@@ -222,8 +236,8 @@ observeEvent(input$undo_crop, {
   values$session_scale = values$session_width / values$info$width
   values$session_inv_scale = values$info$width / values$session_width
   
-  image_write(values$image, "tmp.png"); values$current_path <- "tmp.png"
-  
+  # change to previous image
+  image_write(values$image, file.path("images", "temp", "tmp.png")); values$current_path <- file.path("images", "temp", "tmp.png")
 })
 
 #BUTTON: CROP
@@ -256,7 +270,7 @@ observeEvent(input$crop, {
     message(paste0('crop_list:', values$crop_list, '\n'))
     
     shinyjs::enable("reset_crop"); shinyjs::enable("undo_crop")
-    image_write(values$image, file.path("images", "tmp.png")); values$current_path <- "tmp.png"
+    image_write(values$image, file.path("images", "temp", "tmp.png")); values$current_path <- file.path("images", "temp", "tmp.png")
   }})
 
 #BUTTON: RESET MASK
