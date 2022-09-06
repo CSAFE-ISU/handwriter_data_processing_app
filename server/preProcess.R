@@ -149,7 +149,6 @@ output$initials <- renderText({paste0("Initials: ", values$initials)})
 #RENDER: DOCUMENT NAMES
 output$scan_name <- renderText({paste0("Scan name: ", values$scan_name)})
 output$scan_path <- renderText({paste0("Scan path: ", values$scan_path)})
-
 output$crop_name <- renderText({paste0("Crop name: ", values$crop_name)})
 output$crop_path <- renderText({paste0("Crop path: ", values$crop_path)})
 

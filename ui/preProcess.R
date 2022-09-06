@@ -32,6 +32,7 @@ tabPanel("Pre-process",
                           column(width = 11, offset=1, actionButton("save_scan", "Save Original Scan")),
                         ),
                         hr(),
+                        
                         # only show crop and rotate options for writing and signatures
                         conditionalPanel(
                           condition = "output.doc_type == 'Document Type: signature' || output.doc_type == 'Document Type: writing'",
@@ -52,7 +53,24 @@ tabPanel("Pre-process",
                           br(),
                           fluidRow(
                             column(width = 12, actionButton("save_crop", "Save Current Document")),
-                          ))),
+                          )),
+                        # only show survey response fields for surveys
+                        conditionalPanel(
+                          condition = "output.doc_type == 'Document Type: survey'",
+                          h4("Survey Responses:"),
+                          fluidRow(column(width=11, offset=1, textInput("response_initials", "Initials", ""))),
+                          fluidRow(column(width=11, offset=1, textInput("response_location", "Current location", ""))),
+                          fluidRow(column(width=11, offset=1, radioButtons("time", 
+                                                                           "Current time", 
+                                                                           choiceValues = c("a", "b", "c", "d", "e", "f"),
+                                                                           choiceNames = c("Early morning (earlier than 9:30am)",
+                                                                                            "Late morning (9:30am-12:00pm)",
+                                                                                            "Early afternoon (12:00pm-2:30pm)",
+                                                                                            "Late afternoon (2:30pm-5pm)",
+                                                                                            "Early evening (5pm-7:30pm)",
+                                                                                            "Late evening (later than 7:30pm)")))),
+                        )
+                        ),
            mainPanel(width = 8,
                      span(textOutput("error"), style="color:red"),
                      br(),
