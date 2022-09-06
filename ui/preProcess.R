@@ -4,18 +4,18 @@ tabPanel("Pre-process",
          sidebarLayout(
            sidebarPanel(width = 4,
                         h2("Pre-process"),
-                        br(),
-                        h4("Testing"),
-                        fluidRow(column(width=11, offset=1, textOutput("upload_path"))),
-                        fluidRow(column(width=11, offset=1, textOutput("current_path"))),
+                        fileInput("upload", "Choose a new document to process", accept = c('image/png')),
+                        hr(),
                         h4("Current document:"),
-                        fluidRow(column(width=11, offset=1, textOutput("image_name"))),
                         fluidRow(column(width=11, offset=1, textOutput("dimensions"))),
                         fluidRow(column(width=11, offset=1, textOutput("qr"))),
                         fluidRow(column(width=11, offset=1, textOutput("doc_type"))),
                         fluidRow(column(width=11, offset=1, textOutput("writer"))),
-                        fluidRow(column(width=11, offset=1, textOutput("session"))),
-                        
+                        # Only show this panel if the doc type is a survey
+                        conditionalPanel(
+                          condition = "output.doc_type == 'Document Type: survey' || output.doc_type == 'Document Type: writing'",
+                          fluidRow(column(width=11, offset=1, textOutput("session"))),
+                        ),
                         # Only show this panel if the doc type is a prompt
                         conditionalPanel(
                           condition = "output.doc_type == 'Document Type: writing'",
@@ -27,37 +27,28 @@ tabPanel("Pre-process",
                           condition = "output.doc_type == 'Document Type: signature'",
                           fluidRow(column(width=11, offset=1, textOutput("initials"))),
                         ),
-                        fluidRow(column(width=11, offset=1, textOutput("scan_name"))),
-                        fluidRow(column(width=11, offset=1, textOutput("scan_path"))),
-                        fluidRow(column(width=11, offset=1, textOutput("crop_name"))),
-                        fluidRow(column(width=11, offset=1, textOutput("crop_path"))),
                         fluidRow(column(width=11, offset=1, actionButton("select_qr", "Select QR code manually"))),
-                        
-                        br(),
-                        fileInput("upload", "Choose a new document to pre-process", accept = c('image/png')),
+                        fluidRow(
+                          column(width = 11, offset=1, actionButton("save_scan", "Save Original Scan")),
+                        ),
                         hr(),
+                        h4("Rotate:"),
                         fluidRow(
                           column(width = 1, br(), actionButton("left", label = icon("angle-double-left", "fa-2xs"))),
                           column(width = 8, offset = 1, sliderInput("rotation", "Rotate:", min = -180, max = 180, value = 0)), 
                           column(width = 1, br(), actionButton("right", label = icon("angle-double-right", "fa-2xs"))),
                         ), 
                         hr(),
+                        h4("Crop:"),
                         fluidRow(
                           column(width = 4, actionButton("reset_crop", "Reset Crop")),
-                          column(width = 4, actionButton("undo_crop", "Undo Last Crop")),
+                          column(width = 4, actionButton("undo_crop", "Undo Crop")),
                           column(width = 4, actionButton("crop", "Crop Area")),
                         ),
                         hr(),
+                        br(),
                         fluidRow(
-                          column(width = 2, offset = 6, actionButton("save_scan", "Save Original Scan")),
-                        ),
-                        hr(),
-                        fluidRow(
-                          column(width = 2, offset = 6, actionButton("save_crop", "Save Cropped Document")),
-                        ),
-                        hr(),
-                        fluidRow(
-                          column(width = 2, offset = 6, downloadButton("save_document", "Save Document")),
+                          column(width = 12, actionButton("save_crop", "Save Current Document")),
                         )),
            mainPanel(width = 8,
                      span(textOutput("error"), style="color:red"),
@@ -81,7 +72,6 @@ tabPanel("Pre-process",
                                           imageOutput("preprocess_plot_masked", brush = brushOpts(id = "preprocess_plot_brush", resetOnNew = TRUE))
                                  )
                      ),
-                     
            )
          ),
 )
