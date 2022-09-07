@@ -9,9 +9,28 @@ observeEvent(input$upload, {
     values$upload_path <- input$upload$datapath
   }
   
-  # reset
+  # reset 
   values$plot_type <- ''
   values$uploaded_image <- NULL
+  
+  # reset qr code values
+  values$doc_type <- NULL
+  values$writer <- NULL
+  values$session <- NULL
+  values$prompt <- NULL
+  values$repetition <- NULL
+  values$initials <- NULL
+  values$scan_name <- NULL
+  values$scan_path <- NULL
+  values$crop_name <- NULL
+  values$crop_path <- NULL
+  values$qr_path <- NULL
+  
+  # reset survey responses
+  updateTextInput(session, "response_initials", value = "")
+  updateTextInput(session, "response_location", value = "")
+  updateRadioButtons(session, "response_time", selected = NULL)
+  updateDateInput(session, "response_date", value = NA)
   
   # read image
   if(endsWith(input$upload$datapath, "png")){
@@ -26,17 +45,7 @@ observeEvent(input$upload, {
   }
   
   # read QR code and get document info
-  values$doc_type <- NULL
-  values$writer <- NULL
-  values$session <- NULL
-  values$prompt <- NULL
-  values$repetition <- NULL
-  values$initials <- NULL
-  values$scan_name <- NULL
-  values$scan_path <- NULL
-  values$crop_name <- NULL
-  values$crop_path <- NULL
-  values$qr_path <- NULL
+
   values$qr <- quadrangle::qr_scan(values$image)$values$value  # read qr code
   # if qr code isn't empty, format doc names
   if (length(values$qr) != 0){
@@ -325,16 +334,23 @@ output$preprocess_plot <- renderImage({
   output$error <- renderText({""})
   
   values$session_width = session$clientData$output_preprocess_plot_width
+  values$session_height = session$clientData$output_preprocess_plot_height
   values$session_scale = values$session_width / values$info$width
   values$session_inv_scale = values$info$width / values$session_width
   
   # make temp image for display
-  tmp <- values$image %>%
-    image_rotate(input$rotation) %>%
-    image_resize(geometry_size_pixels(width=session$clientData$output_preprocess_plot_width)) %>%
-    image_write(tempfile(fileext='png'), format = 'png')
-  
-  list(src = tmp, contentType = "image/png", width=session$clientData$output_preprocess_plot_width)
+  if (values$doc_type == 'survey'){
+    tmp <- values$image %>%
+      image_resize(geometry_size_pixels(height=2.25*values$session_height)) %>%
+      image_write(tempfile(fileext='png'), format = 'png')
+    list(src = tmp, contentType = "image/png", height=2.25*values$session_height)
+  } else {
+    tmp <- values$image %>%
+      image_rotate(input$rotation) %>%
+      image_resize(geometry_size_pixels(width=values$session_width)) %>%
+      image_write(tempfile(fileext='png'), format = 'png')
+    list(src = tmp, contentType = "image/png", width=values$session_width)
+  }
 }, deleteFile = FALSE)
 
 #RENDER: IMAGE WITH MASK
@@ -408,6 +424,13 @@ output$save_mask <- downloadHandler(
 #     file.copy(tmpfile <- values$image %>% image_rotate(input$rotation) %>% image_write(tempfile(fileext='png'), format = 'png'), file)
 #   }
 # )
+
+output$survey_table <- renderTable({date <- format(as.Date(as.character(input$response_date), '%Y-%m-%d'), "%m/%d/%Y")
+                                    data.frame("WID" = values$writer,
+                                               "Initials" = input$response_initials,
+                                               "Location" = input$response_location,
+                                               "Time" = input$response_time,
+                                               "Date" = date)})
 
 #SAVE: SCAN
 observeEvent(input$save_scan, {

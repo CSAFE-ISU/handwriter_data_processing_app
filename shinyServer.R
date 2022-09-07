@@ -20,6 +20,7 @@ server <- function(input, output, session) {
   values$image_name <- 'images/samplewriting.png'
   values$upload_path <- "images/samplewriting.png"
   values$current_path <- "images/samplewriting.png"
+  values$doc_type <- "template"
   
   # image info
   info <- image_info(image)
