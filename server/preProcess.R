@@ -14,7 +14,7 @@ observeEvent(input$upload, {
   values$uploaded_image <- NULL
   
   # reset qr code values
-  values$doc_type <- NULL
+  values$doc_type <- "default"
   values$writer <- NULL
   values$session <- NULL
   values$prompt <- NULL
