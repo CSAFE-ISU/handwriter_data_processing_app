@@ -26,7 +26,7 @@ observeEvent(input$upload, {
   values$crop_path <- NULL
   values$qr_path <- NULL
   
-  # reset survey responses
+  # reset survey responses input boxes
   updateTextInput(session, "response_initials", value = "")
   updateTextInput(session, "response_location", value = "")
   updateRadioButtons(session, "response_time", selected = NULL)
@@ -45,7 +45,6 @@ observeEvent(input$upload, {
   }
   
   # read QR code and get document info
-
   values$qr <- quadrangle::qr_scan(values$image)$values$value  # read qr code
   # if qr code isn't empty, format doc names
   if (length(values$qr) != 0){
@@ -55,6 +54,12 @@ observeEvent(input$upload, {
     makeDocNames()
   }
   
+  # extract number from writer id for survey response table
+  if (values$doc_type == 'survey'){
+    id <- stringr::str_extract(values$writer, "\\d+")
+    responses$df['WID'] <- as.integer(id)
+  }
+  
   # update current document info
   values$image_name <- input$upload$name
   values$dimensions <- paste0(values$info$width, 'x', values$info$height)
@@ -62,6 +67,23 @@ observeEvent(input$upload, {
   # clean up
   values$crop_list <- list(values$image)
   values$mask_list_df <- values$mask_list_df[0,]  # keep column names, clear all rows
+})
+
+#UPDATE: 
+observeEvent(input$response_initials, {responses$df['Initials'] <- input$response_initials})
+observeEvent(input$response_location, {responses$df['Location'] <- input$response_location})
+observeEvent(input$response_time, {responses$df['Time'] <- input$response_time})
+observeEvent(input$response_date, {responses$df['Date'] <- as.character(input$response_date)})
+observeEvent(input$response_3rd_grade, {responses$df['ThirdGradeLoc'] <- input$response_3rd_grade})
+observeEvent(input$response_age, {responses$df['Age'] <- input$response_age})
+observeEvent(input$response_language, {responses$df['Language'] <- input$response_language})
+observeEvent(input$response_gender, {responses$df['Gender'] <- input$response_gender})
+observeEvent(input$response_ethnicity, {responses$df['Ethnicity'] <- input$response_ethnicity})
+observeEvent(input$response_education_level, {responses$df['Edu'] <- input$response_education_level})
+observeEvent(input$response_hand, {responses$df['Hand'] <- input$response_hand})
+
+output$survey_table <- renderTable({
+  responses$df
 })
 
 #HELPER FUNCTION: SPLIT QR CODE 
@@ -329,6 +351,14 @@ observeEvent(input$mask, {
     message(values$mask_list_df)
   }})
 
+# output$survey_table <- renderTable({
+#   date <- format(as.Date(as.character(input$response_date), '%Y-%m-%d'), "%m/%d/%Y")
+# data.frame("WID" = responses$writer,
+#            "Initials" = responses$initials,
+#            "Location" = responses$location,
+#            "Time" = responses$time,
+#            "Date" = responses$date)})
+
 #RENDER: IMAGE
 output$preprocess_plot <- renderImage({
   output$error <- renderText({""})
@@ -424,13 +454,6 @@ output$save_mask <- downloadHandler(
 #     file.copy(tmpfile <- values$image %>% image_rotate(input$rotation) %>% image_write(tempfile(fileext='png'), format = 'png'), file)
 #   }
 # )
-
-output$survey_table <- renderTable({date <- format(as.Date(as.character(input$response_date), '%Y-%m-%d'), "%m/%d/%Y")
-                                    data.frame("WID" = values$writer,
-                                               "Initials" = input$response_initials,
-                                               "Location" = input$response_location,
-                                               "Time" = input$response_time,
-                                               "Date" = date)})
 
 #SAVE: SCAN
 observeEvent(input$save_scan, {

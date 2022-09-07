@@ -12,6 +12,22 @@ server <- function(input, output, session) {
   
   # create reactive values
   values <- reactiveValues()
+  responses <- reactiveValues(
+    df = data.frame(
+      "WID" = "NA",
+      "Initials" = "NA",
+      "Location" = "NA",
+      "Time" = "NA",
+      "Date" = "NA",
+      "ThirdGradeLoc" = "NA",
+      "Age" = "NA",
+      "Language" = "NA",
+      "Gender" = "NA",
+      "Ethnicity" = "NA",
+      "Edu" = "NA",
+      "Hand" = "NA"
+      )
+  )
   
   # read in sample image
   image <- magick::image_read("images/samplewriting.png")

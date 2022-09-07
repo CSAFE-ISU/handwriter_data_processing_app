@@ -73,7 +73,7 @@ tabPanel("Pre-process",
                                                                                             "e. Early evening (5pm-7:30pm)",
                                                                                             "f. Late evening (later than 7:30pm)"),
                                                                            selected=NULL))),
-                          fluidRow(column(width=11, offset=1, dateInput("response_date", "What is the date today?", format = "mm-dd-yyyy")))
+                          fluidRow(column(width=11, offset=1, dateInput("response_date", "What is the date today?")))
                           ),  # end conditionalPanel
                         
                         # Survey 1 only panel - survey responses
@@ -116,7 +116,6 @@ tabPanel("Pre-process",
                      br(),
                      tabsetPanel(id = "plotset",
                                  tabPanel("Current Document",
-                                          
                                           # Survey only panel
                                           conditionalPanel(
                                             condition = "output.doc_type == 'Document Type: survey'",
