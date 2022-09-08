@@ -15,7 +15,7 @@ observeEvent(input$upload, {
   # reset 
   values$plot_type <- ''
   values$uploaded_image <- NULL
-  values$docs <- NULL
+  values$df <- NULL
   
   # reset qr code reactive values
   values$doc_type <- "default"
@@ -609,22 +609,32 @@ listAllDocs <- function(){
     }
   }
   
-  docs = c(survey_csvs, survey_scans, sig_scans, sig_crops, writing_scans, writing_crops)
+  df = data.frame("full_path" = survey_csvs, "doc_type" = "survey")
+  df = rbind(df, data.frame("full_path" = survey_scans, "doc_type" = "survey"))
+  df = rbind(df, data.frame("full_path" = sig_scans, "doc_type" = "signature"))
+  df = rbind(df, data.frame("full_path" = sig_crops, "doc_type" = "signature"))
+  df = rbind(df, data.frame("full_path" = writing_scans, "doc_type" = "writing"))
+  df = rbind(df, data.frame("full_path" = writing_crops, "doc_type" = "writing"))
+  df['file'] = basename(df$full_path)
   
-  return(docs)
+  return(df)
 }
 
 observeEvent(input$save_crop, {
-  values$docs <- listAllDocs()
+  values$df <- listAllDocs()
 })
 
-output$docs <- renderText({
-  if (is.null(values$docs)){
-    ""
-  } else{
-    values$docs[!file.exists(values$docs)]
+output$missing <- renderDataTable({
+  if (!is.null(values$df)){
+    values$df[!file.exists(values$df$full_path),]
   }
 })
+
+output$df <- renderText({
+  values$df$full_path
+})
+
+outputOptions(output, "df", suspendWhenHidden = FALSE)
 
 # Testing -----------------------------------------------------------------
 output$csv_path <- renderText({survey$csv_path})

@@ -44,7 +44,7 @@ server <- function(input, output, session) {
   values$qr <- NULL
   
   # missing docs
-  values$docs <- NULL
+  values$df <- NULL
   
   # main directory based on OS (Darwin = Mac)
   switch(Sys.info()[['sysname']],

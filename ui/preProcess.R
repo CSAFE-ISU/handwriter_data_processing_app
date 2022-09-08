@@ -126,9 +126,13 @@ tabPanel("Pre-process",
                                             condition = "output.doc_type == 'Document Type: survey' && output.session == 'Session: 1'",
                                             tableOutput("survey1_table")
                                           ),
+                                          # 
                                           conditionalPanel(
-                                            condition = "!is.null(values.docs)",
-                                            textOutput("docs"),
+                                            condition = "output.df",
+                                            h4("Documents missing for current writer:"),
+                                            dataTableOutput("missing"),
+                                            hr(),
+                                            
                                           ),
                                           br(),
                                           imageOutput("preprocess_plot", 
