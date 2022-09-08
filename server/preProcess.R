@@ -51,6 +51,8 @@ observeEvent(input$upload, {
     splitQR(values$qr)
     # format document names
     makeDocNames()
+    # enable save scan button
+    shinyjs::enable("save_scan")
   }
   
   # extract number from writer id for survey response table
@@ -343,6 +345,8 @@ observeEvent(input$select_qr, {
       splitQR(values$qr)
       # format document names
       makeDocNames()
+      # enable save scan button
+      shinyjs::enable("save_scan")
     }
   }})
 

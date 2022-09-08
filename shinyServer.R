@@ -8,7 +8,12 @@ server <- function(input, output, session) {
   #========================================================
   
   # disable buttons
-  shinyjs::disable("reset_crop"); shinyjs::disable("undo_crop"); shinyjs::disable("save_mask"); shinyjs::disable("reset_mask"); shinyjs::disable("undo_mask")
+  shinyjs::disable("reset_crop") 
+  shinyjs::disable("undo_crop") 
+  shinyjs::disable("save_mask")
+  shinyjs::disable("reset_mask") 
+  shinyjs::disable("undo_mask")
+  shinyjs::disable("save_scan")
   
   # create reactive values
   values <- reactiveValues()
