@@ -62,6 +62,7 @@ tabPanel("Pre-process",
                         conditionalPanel(
                           condition = "output.doc_type == 'Document Type: survey'",
                           h4("Survey Responses:"),
+                          textOutput("csv_path"),
                           fluidRow(column(width=11, offset=1, textInput("response_initials", "What are your initials?", ""))),
                           fluidRow(column(width=11, offset=1, textInput("response_location", "What is your current location?", ""))),
                           fluidRow(column(width=11, offset=1, radioButtons("response_time", 
@@ -71,8 +72,7 @@ tabPanel("Pre-process",
                                                                                             "c. Early afternoon (12:00pm-2:30pm)",
                                                                                             "d. Late afternoon (2:30pm-5pm)",
                                                                                             "e. Early evening (5pm-7:30pm)",
-                                                                                            "f. Late evening (later than 7:30pm)"),
-                                                                           selected=NULL))),
+                                                                                            "f. Late evening (later than 7:30pm)")))),
                           fluidRow(column(width=11, offset=1, dateInput("response_date", "What is the date today?")))
                           ),  # end conditionalPanel
                         
@@ -120,6 +120,10 @@ tabPanel("Pre-process",
                                           conditionalPanel(
                                             condition = "output.doc_type == 'Document Type: survey'",
                                             tableOutput("survey_table")
+                                          ),
+                                          conditionalPanel(
+                                            condition = "output.doc_type == 'Document Type: survey' && output.session == 'Session: 1'",
+                                            tableOutput("survey1_table")
                                           ),
                                           br(),
                                           imageOutput("preprocess_plot", 

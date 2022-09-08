@@ -2,7 +2,7 @@
 #=================== PREPROCESSING =======================
 #=========================================================
 
-#UPLOAD: DOCUMENT
+#UPLOAD: document
 observeEvent(input$upload, {
   # update upload_path
   if (length(input$upload$datapath)){
@@ -29,8 +29,16 @@ observeEvent(input$upload, {
   # reset survey responses input boxes
   updateTextInput(session, "response_initials", value = "")
   updateTextInput(session, "response_location", value = "")
-  updateRadioButtons(session, "response_time", selected = NULL)
+  updateRadioButtons(session, "response_time", selected = "a. Early morning (earlier than 9:30am)")
   updateDateInput(session, "response_date", value = NA)
+  updateTextInput(session, "response_3rd_Grade", value = "")
+  updateRadioButtons(session, "response_age", selected = "a. 18-24")
+  updateRadioButtons(session, "response_language", selected = "yes")
+  updateRadioButtons(session, "response_gender", selected = "a. Female")
+  updateTextInput(session, "response_gender_other", value = "")
+  updateRadioButtons(session, "response_ethnicity", selected = "a. African American")
+  updateRadioButtons(session, "response_education_level", selected = "a. High school or less")
+  updateRadioButtons(session, "response_hand", selected = "a. Left")
   
   # read image
   if(endsWith(input$upload$datapath, "png")){
@@ -57,7 +65,7 @@ observeEvent(input$upload, {
   # extract number from writer id for survey response table
   if (values$doc_type == 'survey'){
     id <- stringr::str_extract(values$writer, "\\d+")
-    responses$df['WID'] <- as.integer(id)
+    survey$df['WID'] <- as.integer(id)
   }
   
   # update current document info
@@ -69,21 +77,54 @@ observeEvent(input$upload, {
   values$mask_list_df <- values$mask_list_df[0,]  # keep column names, clear all rows
 })
 
-#UPDATE: 
-observeEvent(input$response_initials, {responses$df['Initials'] <- input$response_initials})
-observeEvent(input$response_location, {responses$df['Location'] <- input$response_location})
-observeEvent(input$response_time, {responses$df['Time'] <- input$response_time})
-observeEvent(input$response_date, {responses$df['Date'] <- as.character(input$response_date)})
-observeEvent(input$response_3rd_grade, {responses$df['ThirdGradeLoc'] <- input$response_3rd_grade})
-observeEvent(input$response_age, {responses$df['Age'] <- input$response_age})
-observeEvent(input$response_language, {responses$df['Language'] <- input$response_language})
-observeEvent(input$response_gender, {responses$df['Gender'] <- input$response_gender})
-observeEvent(input$response_ethnicity, {responses$df['Ethnicity'] <- input$response_ethnicity})
-observeEvent(input$response_education_level, {responses$df['Edu'] <- input$response_education_level})
-observeEvent(input$response_hand, {responses$df['Hand'] <- input$response_hand})
 
+# SURVEY -----------------------------------------------------------------
+#CREATE: survey reactive values
+survey <- reactiveValues(
+  # all surveys
+  df = data.frame(
+    "WID" = "",
+    "Initials" = "",
+    "Location" = "",
+    "Time" = "",
+    "Date" = ""),
+  # survey1 only
+  df1 = data.frame(
+    "ThirdGradeLoc" = "",
+    "Age" = "",
+    "Language" = "",
+    "Gender" = "",
+    "Other" = "",
+    "Ethnicity" = "",
+    "Edu" = "",
+    "Hand" = ""
+  )
+)
+
+#UPDATE: survey values
+observeEvent(input$response_initials, {survey$df['Initials'] <- input$response_initials})
+observeEvent(input$response_location, {survey$df['Location'] <- input$response_location})
+observeEvent(input$response_time, {survey$df['Time'] <- input$response_time})
+observeEvent(input$response_date, {survey$df['Date'] <- as.character(input$response_date)})
+
+#UPDATE: survey1 only values
+observeEvent(input$response_3rd_grade, {survey$df1['ThirdGradeLoc'] <- input$response_3rd_grade})
+observeEvent(input$response_age, {survey$df1['Age'] <- input$response_age})
+observeEvent(input$response_language, {survey$df1['Language'] <- input$response_language})
+observeEvent(input$response_gender, {survey$df1['Gender'] <- input$response_gender})
+observeEvent(input$response_gender_other, {survey$df1['Other'] <- input$response_gender_other})
+observeEvent(input$response_ethnicity, {survey$df1['Ethnicity'] <- input$response_ethnicity})
+observeEvent(input$response_education_level, {survey$df1['Edu'] <- input$response_education_level})
+observeEvent(input$response_hand, {survey$df1['Hand'] <- input$response_hand})
+
+#RENDER: survey table
 output$survey_table <- renderTable({
-  responses$df
+  survey$df
+})
+
+#RENDER: survey1 table
+output$survey1_table <- renderTable({
+  survey$df1
 })
 
 #HELPER FUNCTION: SPLIT QR CODE 
@@ -135,6 +176,10 @@ makeDocNames <- function(){
     # crop
     values$crop_name <- NULL
     values$crop_path <- NULL
+    
+    # csv
+    survey$csv_name <- paste0(values$writer, "_survey", values$session, ".csv")
+    survey$csv_path <- file.path(values$main_dir, "Stage3_Survey_Data", "Spreadsheets", values$writer, survey$csv_name)
   } 
   
   # format writing
@@ -148,6 +193,10 @@ makeDocNames <- function(){
     # cropped
     values$crop_name <- paste0(values$writer,"_s", session, "_p", values$prompt, "_r", repetition, ".png")
     values$crop_path <- file.path(values$main_dir, "Stage4_Cropped", "Writing", values$writer, values$crop_name)
+  
+    # csv
+    survey$csv_name <- NULL
+    survey$csv_path <- NULL
   }
   
   # format signature scan
@@ -159,6 +208,10 @@ makeDocNames <- function(){
     # cropped
     values$crop_name <- paste0(values$writer,"_", values$initials, ".png")
     values$crop_path <- file.path(values$main_dir, "Stage4_Cropped", "Signatures", values$writer, values$crop_name)
+    
+    # csv
+    survey$csv_name <- NULL
+    survey$csv_path <- NULL
   }
 }
 
@@ -351,14 +404,6 @@ observeEvent(input$mask, {
     message(values$mask_list_df)
   }})
 
-# output$survey_table <- renderTable({
-#   date <- format(as.Date(as.character(input$response_date), '%Y-%m-%d'), "%m/%d/%Y")
-# data.frame("WID" = responses$writer,
-#            "Initials" = responses$initials,
-#            "Location" = responses$location,
-#            "Time" = responses$time,
-#            "Date" = responses$date)})
-
 #RENDER: IMAGE
 output$preprocess_plot <- renderImage({
   output$error <- renderText({""})
@@ -455,6 +500,8 @@ output$save_mask <- downloadHandler(
 #   }
 # )
 
+
+# Save Buttons ------------------------------------------------------------
 #SAVE: SCAN
 observeEvent(input$save_scan, {
   # Return error if scan already exists. Otherwise, save the scan.
@@ -494,3 +541,48 @@ observeEvent(input$save_crop, {
       image_write(path=values$crop_path, format = 'png')
   }
 })
+
+#SAVE: survey
+observeEvent(input$save_survey, {
+  # Return error if survey csv already exists.
+  if(file.exists(survey$csv_path)){
+    output$error <- renderText({paste0("CSV already exists: ", survey$csv_path, "\n Manually delete CSV if you want to save an updated version.")})
+    return()
+  }
+  
+  output$error <- renderText({""})
+  
+  # make writer folder for csv
+  if (!dir.exists(dirname(survey$csv_path))){
+    dir.create(dirname(survey$csv_path))
+  }
+  
+  if (values$session == 1){
+    # combine dataframes
+    df = cbind(survey$df, survey$df1)
+    
+    # sort columns to match previous csv files
+    sorted = df[c("WID", "Initials", "Location", "Date", "Time", "ThirdGradeLoc",
+                  "Age", "Language", "Gender", "Other", "Ethnicity", "Edu",
+                  "Hand")]
+
+    # save csv
+    write.csv(sorted, file = survey$csv_path)
+  } else {
+    df = survey$df
+    
+    # sort columns to match previous csv files
+    sorted = df[c("WID", "Initials", "Location", "Date", "Time")]
+    
+    # rename column to match previous csv files
+    colnames(sorted)[colnames(sorted) == "Location"] <- "Current_Location"
+    
+    # save csv
+    write.csv(sorted, file = survey$csv_path)
+  }
+})
+
+
+# Testing -----------------------------------------------------------------
+output$csv_path <- renderText({survey$csv_path})
+
