@@ -121,9 +121,14 @@ tabPanel("Pre-process",
                                             condition = "output.doc_type == 'Document Type: survey'",
                                             tableOutput("survey_table")
                                           ),
+                                          # Survey1 only panel
                                           conditionalPanel(
                                             condition = "output.doc_type == 'Document Type: survey' && output.session == 'Session: 1'",
                                             tableOutput("survey1_table")
+                                          ),
+                                          conditionalPanel(
+                                            condition = "!is.null(values.docs)",
+                                            textOutput("docs"),
                                           ),
                                           br(),
                                           imageOutput("preprocess_plot", 

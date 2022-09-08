@@ -4,6 +4,9 @@
 # Image -------------------------------------------------------------------
 #UPLOAD: document
 observeEvent(input$upload, {
+  # turn off save scan button
+  shinyjs::disable("save_scan")
+  
   # update upload_path
   if (length(input$upload$datapath)){
     values$upload_path <- input$upload$datapath
@@ -12,10 +15,11 @@ observeEvent(input$upload, {
   # reset 
   values$plot_type <- ''
   values$uploaded_image <- NULL
+  values$docs <- NULL
   
   # reset qr code reactive values
   values$doc_type <- "default"
-  values$writer <- values$session <- values$prompt <- values$repetition <- values$initials <- values$scan_name <- values$scan_path <- values$crop_name <- values$crop_path <- values$qr_path <- NULL
+  values$writer <- values$session <- values$prompt <- values$repetition <- values$initials <- values$scan_name <- values$scan_path <- values$crop_name <- values$crop_path <- values$qr_path <- values$doc <- NULL
   
   # reset survey responses input boxes
   updateTextInput(session, "response_initials", value = "")
@@ -570,6 +574,57 @@ output$save_mask <- downloadHandler(
   }
 )
 
+
+
+
+# Data Checks -------------------------------------------------------------
+listAllDocs <- function(){
+  # create a list of every document that a writer should have
+  
+  # survey csv files
+  survey_csvs <- file.path(values$main_dir, "Stage3_Survey_Data", "Spreadsheets", values$writer, paste0(values$writer, "_survey", 1:3, ".csv"))
+  
+  # survey scan files
+  survey_scans <- file.path(values$main_dir, "Stage3_Survey_Data", "Sorted", values$writer, paste0(values$writer, "_survey", 1:3, ".png"))
+  
+  # signature scans 
+  sig_scans <- file.path(values$main_dir, "Stage2_Sorted", "Signatures", values$writer, paste0(values$writer, 1:3, "_scan.png"))
+  
+  # signature crops
+  sig_crops <- file.path(values$main_dir, "Stage4_Cropped", "Signatures", values$writer, paste0(values$writer, 1:3, ".png"))
+  
+  # writing scans and crops
+  writing_scans <- writing_crops <- c()
+  s = c("_s01", "_s02", "_s03")
+  p = c("_pLND", "_pWOZ", "_pPHR")
+  r = c("_r01", "_r02", "_r03")
+  for (i in 1:3){
+    for (j in 1:3){
+      for (k in 1:3){
+        temp_scan <- file.path(values$main_dir, "Stage2_Sorted", "Writing", values$writer, paste0(values$writer, s[i], p[j], r[k], "_scan.png"))
+        temp_crop <- file.path(values$main_dir, "Stage4_Cropped", "Writing", values$writer, paste0(values$writer, s[i], p[j], r[k], ".png"))
+        writing_scans <- c(writing_scans, temp_scan)
+        writing_crops <- c(writing_crops, temp_crop)
+      }
+    }
+  }
+  
+  docs = c(survey_csvs, survey_scans, sig_scans, sig_crops, writing_scans, writing_crops)
+  
+  return(docs)
+}
+
+observeEvent(input$save_crop, {
+  values$docs <- listAllDocs()
+})
+
+output$docs <- renderText({
+  if (is.null(values$docs)){
+    ""
+  } else{
+    values$docs[!file.exists(values$docs)]
+  }
+})
 
 # Testing -----------------------------------------------------------------
 output$csv_path <- renderText({survey$csv_path})
