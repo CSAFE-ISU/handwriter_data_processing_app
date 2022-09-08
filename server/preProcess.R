@@ -70,7 +70,7 @@ observeEvent(input$upload, {
   values$mask_list_df <- values$mask_list_df[0,]  # keep column names, clear all rows
 })
 
-#RENDER: IMAGE
+#RENDER: image
 output$preprocess_plot <- renderImage({
   output$error <- renderText({""})
   
@@ -96,7 +96,7 @@ output$preprocess_plot <- renderImage({
 
 
 # Original Scan -----------------------------------------------------------
-#SAVE: SCAN
+#SAVE: scan
 observeEvent(input$save_scan, {
   # Return error if scan already exists. Otherwise, save the scan.
   if(file.exists(values$scan_path)){
@@ -208,7 +208,7 @@ observeEvent(input$save_survey, {
 
 
 # QR CODE -----------------------------------------------------------------
-#HELPER FUNCTION: SPLIT QR CODE 
+#HELPER FUNCTION: split qr code
 splitQR <- function(qr){
   # split qr string
   qr_split <- unlist(stringr::str_split(qr, "/"))
@@ -246,7 +246,7 @@ splitQR <- function(qr){
   }
 }
 
-#HELPER FUNCTION: FORMAT DOC NAMES
+#HELPER FUNCTION: format doc names
 makeDocNames <- function(){
   # use qr code info to format file names
   
@@ -298,13 +298,13 @@ makeDocNames <- function(){
   }
 }
 
-#RENDER: DOCUMENT NAME AND DIMENSIONS
+#RENDER: document name and dimensions
 output$upload_path <- renderText({paste0("Upload path: ", values$upload_path)})
 output$current_path <- renderText({paste0("Current path: ", values$current_path)})
 output$image_name <- renderText({paste0("Name: ", values$image_name)})
 output$dimensions <- renderText({paste0("Dimensions: ", values$dimensions)})
 
-#RENDER: QR CODE INFO
+#RENDER: qr code info
 output$qr <- renderText({paste0("QR Code: ", values$qr)})
 output$doc_type <- renderText({paste0("Document Type: ", values$doc_type)})
 output$writer <- renderText({paste0("Writer: ", values$writer)})
@@ -313,7 +313,7 @@ output$prompt <- renderText({paste0("Prompt: ", values$prompt)})
 output$repetition <- renderText({paste0("Repetition: ", values$repetition)})
 output$initials <- renderText({paste0("Initials: ", values$initials)})
 
-#BUTTON: SELECT QR CODE
+#BUTTON: select qr code
 observeEvent(input$select_qr, {
   
   if(is.null(input$preprocess_plot_brush)){
@@ -352,19 +352,19 @@ observeEvent(input$select_qr, {
 
 
 # Rotation ----------------------------------------------------------------
-#BUTTON: ROTATE LEFT
+#BUTTON: rotate left
 observeEvent(input$left, {
   output$error <- renderText({""})
   updateSliderInput(session, "rotation", value = input$rotation - 1)
 })
 
-#BUTTON: ROTATE RIGHT
+#BUTTON: rotate right
 observeEvent(input$right, {
   output$error <- renderText({""})
   updateSliderInput(session, "rotation", value = input$rotation + 1)
 })
 
-#BUTTON: RESET CROP
+#BUTTON: reset crop
 observeEvent(input$reset_crop, {
   output$error <- renderText({""})
   values$image <- values$uploaded_image
@@ -384,7 +384,7 @@ observeEvent(input$reset_crop, {
 
 
 # Cropping ----------------------------------------------------------------
-#BUTTON: UNDO CROP
+#BUTTON: undo crop
 observeEvent(input$undo_crop, {
   output$error <- renderText({""})
   values$image <- tail(values$crop_list, 2)[[1]]
@@ -406,7 +406,7 @@ observeEvent(input$undo_crop, {
   image_write(values$image, file.path("images", "temp", "tmp.png")); values$current_path <- file.path("images", "temp", "tmp.png")
 })
 
-#BUTTON: CROP
+#BUTTON: crop
 observeEvent(input$crop, {
   
   if(is.null(input$preprocess_plot_brush)){
@@ -439,7 +439,7 @@ observeEvent(input$crop, {
     image_write(values$image, file.path("images", "temp", "tmp.png")); values$current_path <- file.path("images", "temp", "tmp.png")
   }})
 
-#SAVE: CROPPED
+#SAVE: crop
 observeEvent(input$save_crop, {
   # Return error if cropped document already exists. Otherwise, save the cropped document.
   if(file.exists(values$crop_path)){
@@ -460,7 +460,7 @@ observeEvent(input$save_crop, {
 })
 
 # Masking -----------------------------------------------------------------
-#BUTTON: RESET MASK
+#BUTTON: reset mask
 observeEvent(input$reset_mask, {
   if(nrow(values$mask_list_df) == 0){
     output$error <- renderText({"No mask to remove"})
@@ -471,7 +471,7 @@ observeEvent(input$reset_mask, {
   }
 })
 
-#BUTTON: UNDO MASK
+#BUTTON: undo mask
 observeEvent(input$undo_mask, {
   if(nrow(values$mask_list_df) == 0){
     output$error <- renderText({"No mask to undo"})
@@ -485,7 +485,7 @@ observeEvent(input$undo_mask, {
     }
   }})
 
-#BUTTON: MASK
+#BUTTON: mask
 #Adds mask coordinates to mask_list
 observeEvent(input$mask, {
   if(is.null(input$preprocess_plot_brush)){
@@ -508,7 +508,7 @@ observeEvent(input$mask, {
     message(values$mask_list_df)
   }})
 
-#RENDER: IMAGE WITH MASK
+#RENDER: image with mask
 output$preprocess_plot_masked <- renderImage({
   tmp = values$image
   if(nrow(values$mask_list_df) == 0){
@@ -535,7 +535,7 @@ output$preprocess_plot_masked <- renderImage({
   list(src = tmp, contentType = "image/png")
 }, deleteFile = FALSE)
 
-#SAVE: MASK 
+#SAVE: mask
 output$save_mask <- downloadHandler(
   filename <- function(){
     paste("image_masked.RData")
