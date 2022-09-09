@@ -43,8 +43,10 @@ server <- function(input, output, session) {
   # qr code
   values$qr <- NULL
   
-  # missing docs
-  values$df <- NULL
+  # data checks 
+  data <- reactiveValues()
+  data$df <- data.frame(matrix(nrow=0, ncol=3,dimnames=list(NULL, c("full_path", "doc_type", "file"))))
+
   
   # main directory based on OS (Darwin = Mac)
   switch(Sys.info()[['sysname']],

@@ -15,7 +15,7 @@ observeEvent(input$upload, {
   # reset 
   values$plot_type <- ''
   values$uploaded_image <- NULL
-  values$df <- NULL
+  data$df <- data.frame(matrix(nrow=0, ncol=3,dimnames=list(NULL, c("full_path", "doc_type", "file"))))
   
   # reset qr code reactive values
   values$doc_type <- "default"
@@ -57,6 +57,8 @@ observeEvent(input$upload, {
     makeDocNames()
     # enable save scan button
     shinyjs::enable("save_scan")
+    # get list of docs for current writer
+    data$df <- listAllDocs()
   }
   
   # extract number from writer id for survey response table
@@ -67,7 +69,6 @@ observeEvent(input$upload, {
   
   # update current document info
   values$image_name <- input$upload$name
-  values$dimensions <- paste0(values$info$width, 'x', values$info$height)
 
   # clean up
   values$crop_list <- list(values$image)
@@ -620,21 +621,19 @@ listAllDocs <- function(){
   return(df)
 }
 
-observeEvent(input$save_crop, {
-  values$df <- listAllDocs()
-})
+output$docs_missing <- renderDataTable({
+  # Filter for missing docs
+  missing <- data$df[!file.exists(data$df$full_path),]
+  # Select columns
+  missing[,c("doc_type", "file")]
+  })
 
-output$missing <- renderDataTable({
-  if (!is.null(values$df)){
-    values$df[!file.exists(values$df$full_path),]
-  }
+output$docs_processed <- renderDataTable({
+  # Filter for processed docs
+  processed <- data$df[file.exists(data$df$full_path),]
+  # Select columns
+  processed[,c("doc_type", "file")]
 })
-
-output$df <- renderText({
-  values$df$full_path
-})
-
-outputOptions(output, "df", suspendWhenHidden = FALSE)
 
 # Testing -----------------------------------------------------------------
 output$csv_path <- renderText({survey$csv_path})
