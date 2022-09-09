@@ -19,7 +19,7 @@ observeEvent(input$upload, {
   
   # reset qr code reactive values
   values$doc_type <- "default"
-  values$writer <- values$session <- values$prompt <- values$repetition <- values$initials <- values$scan_name <- values$scan_path <- values$crop_name <- values$crop_path <- values$qr_path <- values$doc <- NULL
+  values$writer <- values$session <- values$prompt <- values$repetition <- values$initials <- values$scan_name <- values$scan_path <- values$crop_name <- values$crop_path <- values$qr_path <- NULL
   
   # reset survey responses input boxes
   updateTextInput(session, "response_initials", value = "")
