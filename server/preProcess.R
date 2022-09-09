@@ -447,6 +447,19 @@ observeEvent(input$reset_crop, {
 
 
 # Cropping ----------------------------------------------------------------
+#HELPER FUNCTION: saveCrop
+saveCrop <- function(){
+  # make writer folder for cropped document
+  if (!dir.exists(dirname(qr$crop_path))){
+    dir.create(dirname(qr$crop_path))
+  }
+  
+  # save cropped document
+  values$image %>% 
+    image_rotate(input$rotation) %>% 
+    image_write(path=qr$crop_path, format = 'png')
+}
+
 #BUTTON: undo crop
 observeEvent(input$undo_crop, {
   output$error <- renderText({""})
@@ -474,7 +487,7 @@ observeEvent(input$crop, {
   
   if(is.null(input$preprocess_plot_brush)){
     output$error <- renderText({"Please select an area prior to cropping."})
-  }else{ 
+  } else { 
     output$error <- renderText({""})
     
     # Image scaled to fit to window when image rendered. Multiply by inverse
@@ -502,23 +515,21 @@ observeEvent(input$crop, {
     image_write(values$image, file.path("images", "temp", "tmp.png")); values$current_path <- file.path("images", "temp", "tmp.png")
   }})
 
-#SAVE: crop
-observeEvent(input$save_crop, {
+#SAVE: scan and crop
+observeEvent(input$save_docs, {
   # Return error if cropped document already exists. Otherwise, save the cropped document.
-  if(file.exists(qr$crop_path)){
-    output$error <- renderText({paste0("Cropped document already exists: ", qr$crop_path, "\n Manually delete scan if you want to save an updated version.")})
-  }else{ 
+  if (file.exists(qr$scan_path) && file.exists(qr$crop_path)){
+    output$error <- renderText({paste0("Scan and cropped documents already exist. Manually delete files if you want to save a updated versions.")})
+  } else if (!file.exists(qr$scan_path) && file.exists(qr$crop_path)) { 
+    output$error <- renderText({"Cropped document already exists. Manually delete file if you want to save an updated version."})
+    saveScan()
+  } else if (file.exists(qr$scan_path) && !file.exists(qr$crop_path)){
+    output$error <- renderText({"Scan already exists. Manually delete file if you want to save an updated version."})
+    saveCrop()
+  } else {
     output$error <- renderText({""})
-    
-    # make writer folder for cropped document
-    if (!dir.exists(dirname(qr$crop_path))){
-      dir.create(dirname(qr$crop_path))
-    }
-    
-    # save original cropped document
-    values$image %>% 
-      image_rotate(input$rotation) %>% 
-      image_write(path=qr$crop_path, format = 'png')
+    saveScan()
+    saveCrop()
   }
 })
 
