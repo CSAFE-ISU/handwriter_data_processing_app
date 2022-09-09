@@ -32,7 +32,6 @@ tabPanel("Pre-process",
                         
                         # QR Code
                         fluidRow(column(width=11, offset=1, actionButton("select_qr", "Select QR code manually"))),
-                        fluidRow(column(width = 11, offset=1, actionButton("save_scan", "Save Original Scan"))),
                         hr(),
                         
                         # Writing and signature only panel - crop and rotate
@@ -54,7 +53,7 @@ tabPanel("Pre-process",
                           hr(),
                           br(),
                           fluidRow(
-                            column(width = 12, actionButton("save_crop", "Save Current Document")),
+                            column(width = 12, actionButton("save_docs", "Save")),
                           )),
                         
                         # Survey only panel - survey responses
@@ -103,12 +102,9 @@ tabPanel("Pre-process",
                                                                            choices = c("a. Left", "b. Right", "c. Ambidextrous")))),
                           
                           ),  # end conditionalPanel
-                        
-                        # Survey only panel - survey responses
-                        conditionalPanel(
-                          condition = "output.doc_type == 'Document Type: survey'",
-                          fluidRow(column(width=11, offset=1, actionButton("save_survey", "Save Survey Reponses"))),
-                        ),  # end conditionalPanel
+                        conditionalPanel("output.doc_type == 'Document Type: survey'",
+                          fluidRow(column(width = 12, actionButton("save_survey", "Save")))
+                        )
                         ),
            mainPanel(width = 8,
                      span(textOutput("error"), style="color:red"),

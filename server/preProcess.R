@@ -55,6 +55,23 @@ if (!dir.exists(file.path("images", "temp"))){
 }
 
 
+# Original Scan -----------------------------------------------------------
+
+saveScan <- function(){
+  # save original scan
+  
+  # make writer folder for scan
+  if (!dir.exists(dirname(qr$scan_path))){
+    dir.create(dirname(qr$scan_path))
+  }
+  
+  # save original scan
+  values$uploaded_image %>% 
+    image_rotate(input$rotation) %>% 
+    image_write(path=qr$scan_path, format = 'png')
+}
+
+
 # Image -------------------------------------------------------------------
 #UPLOAD: document
 observeEvent(input$upload, {
@@ -154,28 +171,6 @@ output$preprocess_plot <- renderImage({
 }, deleteFile = FALSE)
 
 
-# Original Scan -----------------------------------------------------------
-#SAVE: scan
-observeEvent(input$save_scan, {
-  # Return error if scan already exists. Otherwise, save the scan.
-  if(file.exists(qr$scan_path)){
-    output$error <- renderText({paste0("Scan already exists: ", qr$scan_path, "\n Manually delete scan if you want to save an updated version.")})
-  }else{ 
-    output$error <- renderText({""})
-    
-    # make writer folder for scan
-    if (!dir.exists(dirname(qr$scan_path))){
-      dir.create(dirname(qr$scan_path))
-    }
-    
-    # save original scan
-    values$uploaded_image %>% 
-      image_rotate(input$rotation) %>% 
-      image_write(path=qr$scan_path, format = 'png')
-  }
-})
-
-
 # Survey -----------------------------------------------------------------
 #CREATE: survey reactive values
 survey <- reactiveValues(
@@ -198,6 +193,38 @@ survey <- reactiveValues(
     "Hand" = ""
   )
 )
+
+#HELPER FUNCTION: saveCSV
+saveCSV <- function(){
+  # make writer folder for csv
+  if (!dir.exists(dirname(qr$csv_path))){
+    dir.create(dirname(qr$csv_path))
+  }
+  
+  if (qr$session == 1){
+    # combine dataframes
+    df = cbind(survey$df, survey$df1)
+    
+    # sort columns to match previous csv files
+    sorted = df[c("WID", "Initials", "Location", "Date", "Time", "ThirdGradeLoc",
+                  "Age", "Language", "Gender", "Other", "Ethnicity", "Edu",
+                  "Hand")]
+    
+    # save csv
+    write.csv(sorted, file = qr$csv_path)
+  } else {
+    df = survey$df
+    
+    # sort columns to match previous csv files
+    sorted = df[c("WID", "Initials", "Location", "Date", "Time")]
+    
+    # rename column to match previous csv files
+    colnames(sorted)[colnames(sorted) == "Location"] <- "Current_Location"
+    
+    # save csv
+    write.csv(sorted, file = qr$csv_path)
+  }
+}
 
 #UPDATE: survey values
 observeEvent(input$response_initials, {survey$df['Initials'] <- input$response_initials})
@@ -227,41 +254,18 @@ output$survey1_table <- renderTable({
 
 #SAVE: survey
 observeEvent(input$save_survey, {
-  # Return error if survey csv already exists.
-  if(file.exists(survey$csv_path)){
-    output$error <- renderText({paste0("CSV already exists: ", survey$csv_path, "\n Manually delete CSV if you want to save an updated version.")})
-    return()
-  }
-  
-  output$error <- renderText({""})
-  
-  # make writer folder for csv
-  if (!dir.exists(dirname(survey$csv_path))){
-    dir.create(dirname(survey$csv_path))
-  }
-  
-  if (qr$session == 1){
-    # combine dataframes
-    df = cbind(survey$df, survey$df1)
-    
-    # sort columns to match previous csv files
-    sorted = df[c("WID", "Initials", "Location", "Date", "Time", "ThirdGradeLoc",
-                  "Age", "Language", "Gender", "Other", "Ethnicity", "Edu",
-                  "Hand")]
-    
-    # save csv
-    write.csv(sorted, file = survey$csv_path)
+  if (file.exists(qr$scan_path) && file.exists(qr$csv_path)){
+    output$error <- renderText({paste0("Scan and csv already exist. Manually delete files if you want to save an updated version.")})
+  } else if (!file.exists(qr$scan_path) && file.exists(qr$csv_path)) { 
+    output$error <- renderText({"Csv already exists. Manually delete file if you want to save an updated version."})
+    saveScan()
+  } else if (file.exists(qr$scan_path) && !file.exists(qr$csv_path)){
+    output$error <- renderText({"Scan already exists. Manually delete file if you want to save an updated version."})
+    saveCSV()
   } else {
-    df = survey$df
-    
-    # sort columns to match previous csv files
-    sorted = df[c("WID", "Initials", "Location", "Date", "Time")]
-    
-    # rename column to match previous csv files
-    colnames(sorted)[colnames(sorted) == "Location"] <- "Current_Location"
-    
-    # save csv
-    write.csv(sorted, file = survey$csv_path)
+    output$error <- renderText({""})
+    saveScan()
+    saveCSV()
   }
 })
 
@@ -320,8 +324,8 @@ makeDocNames <- function(){
     qr$crop_path <- NULL
     
     # csv
-    survey$csv_name <- paste0(qr$writer, "_survey", qr$session, ".csv")
-    survey$csv_path <- file.path(values$main_dir, "Stage3_Survey_Data", "Spreadsheets", qr$writer, survey$csv_name)
+    qr$csv_name <- paste0(qr$writer, "_survey", qr$session, ".csv")
+    qr$csv_path <- file.path(values$main_dir, "Stage3_Survey_Data", "Spreadsheets", qr$writer, qr$csv_name)
   } 
   
   # format writing
@@ -337,8 +341,8 @@ makeDocNames <- function(){
     qr$crop_path <- file.path(values$main_dir, "Stage4_Cropped", "Writing", qr$writer, qr$crop_name)
   
     # csv
-    survey$csv_name <- NULL
-    survey$csv_path <- NULL
+    qr$csv_name <- NULL
+    qr$csv_path <- NULL
   }
   
   # format signature scan
@@ -352,8 +356,8 @@ makeDocNames <- function(){
     qr$crop_path <- file.path(values$main_dir, "Stage4_Cropped", "Signatures", qr$writer, qr$crop_name)
     
     # csv
-    survey$csv_name <- NULL
-    survey$csv_path <- NULL
+    qr$csv_name <- NULL
+    qr$csv_path <- NULL
   }
 }
 
@@ -443,6 +447,19 @@ observeEvent(input$reset_crop, {
 
 
 # Cropping ----------------------------------------------------------------
+#HELPER FUNCTION: saveCrop
+saveCrop <- function(){
+  # make writer folder for cropped document
+  if (!dir.exists(dirname(qr$crop_path))){
+    dir.create(dirname(qr$crop_path))
+  }
+  
+  # save cropped document
+  values$image %>% 
+    image_rotate(input$rotation) %>% 
+    image_write(path=qr$crop_path, format = 'png')
+}
+
 #BUTTON: undo crop
 observeEvent(input$undo_crop, {
   output$error <- renderText({""})
@@ -470,7 +487,7 @@ observeEvent(input$crop, {
   
   if(is.null(input$preprocess_plot_brush)){
     output$error <- renderText({"Please select an area prior to cropping."})
-  }else{ 
+  } else { 
     output$error <- renderText({""})
     
     # Image scaled to fit to window when image rendered. Multiply by inverse
@@ -498,23 +515,21 @@ observeEvent(input$crop, {
     image_write(values$image, file.path("images", "temp", "tmp.png")); values$current_path <- file.path("images", "temp", "tmp.png")
   }})
 
-#SAVE: crop
-observeEvent(input$save_crop, {
+#SAVE: scan and crop
+observeEvent(input$save_docs, {
   # Return error if cropped document already exists. Otherwise, save the cropped document.
-  if(file.exists(qr$crop_path)){
-    output$error <- renderText({paste0("Cropped document already exists: ", qr$crop_path, "\n Manually delete scan if you want to save an updated version.")})
-  }else{ 
+  if (file.exists(qr$scan_path) && file.exists(qr$crop_path)){
+    output$error <- renderText({paste0("Scan and cropped documents already exist. Manually delete files if you want to save a updated versions.")})
+  } else if (!file.exists(qr$scan_path) && file.exists(qr$crop_path)) { 
+    output$error <- renderText({"Cropped document already exists. Manually delete file if you want to save an updated version."})
+    saveScan()
+  } else if (file.exists(qr$scan_path) && !file.exists(qr$crop_path)){
+    output$error <- renderText({"Scan already exists. Manually delete file if you want to save an updated version."})
+    saveCrop()
+  } else {
     output$error <- renderText({""})
-    
-    # make writer folder for cropped document
-    if (!dir.exists(dirname(qr$crop_path))){
-      dir.create(dirname(qr$crop_path))
-    }
-    
-    # save original cropped document
-    values$image %>% 
-      image_rotate(input$rotation) %>% 
-      image_write(path=qr$crop_path, format = 'png')
+    saveScan()
+    saveCrop()
   }
 })
 
@@ -690,7 +705,7 @@ output$docs_processed <- renderDataTable({
 })
 
 # Testing -----------------------------------------------------------------
-output$csv_path <- renderText({survey$csv_path})
+output$csv_path <- renderText({qr$csv_path})
 output$scan_name <- renderText({paste0("Scan name: ", qr$scan_name)})
 output$scan_path <- renderText({paste0("Scan path: ", qr$scan_path)})
 output$crop_name <- renderText({paste0("Crop name: ", qr$crop_name)})
