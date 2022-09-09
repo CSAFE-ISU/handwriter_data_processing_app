@@ -4,6 +4,9 @@
 # Image -------------------------------------------------------------------
 #UPLOAD: document
 observeEvent(input$upload, {
+  # turn off save scan button
+  shinyjs::disable("save_scan")
+  
   # update upload_path
   if (length(input$upload$datapath)){
     values$upload_path <- input$upload$datapath
@@ -12,6 +15,7 @@ observeEvent(input$upload, {
   # reset 
   values$plot_type <- ''
   values$uploaded_image <- NULL
+  data$df <- data.frame(matrix(nrow=0, ncol=3,dimnames=list(NULL, c("full_path", "doc_type", "file"))))
   
   # reset qr code reactive values
   values$doc_type <- "default"
@@ -53,6 +57,8 @@ observeEvent(input$upload, {
     makeDocNames()
     # enable save scan button
     shinyjs::enable("save_scan")
+    # get list of docs for current writer
+    data$df <- listAllDocs()
   }
   
   # extract number from writer id for survey response table
@@ -63,14 +69,13 @@ observeEvent(input$upload, {
   
   # update current document info
   values$image_name <- input$upload$name
-  values$dimensions <- paste0(values$info$width, 'x', values$info$height)
 
   # clean up
   values$crop_list <- list(values$image)
   values$mask_list_df <- values$mask_list_df[0,]  # keep column names, clear all rows
 })
 
-#RENDER: IMAGE
+#RENDER: image
 output$preprocess_plot <- renderImage({
   output$error <- renderText({""})
   
@@ -96,7 +101,7 @@ output$preprocess_plot <- renderImage({
 
 
 # Original Scan -----------------------------------------------------------
-#SAVE: SCAN
+#SAVE: scan
 observeEvent(input$save_scan, {
   # Return error if scan already exists. Otherwise, save the scan.
   if(file.exists(values$scan_path)){
@@ -208,7 +213,7 @@ observeEvent(input$save_survey, {
 
 
 # QR CODE -----------------------------------------------------------------
-#HELPER FUNCTION: SPLIT QR CODE 
+#HELPER FUNCTION: split qr code
 splitQR <- function(qr){
   # split qr string
   qr_split <- unlist(stringr::str_split(qr, "/"))
@@ -246,7 +251,7 @@ splitQR <- function(qr){
   }
 }
 
-#HELPER FUNCTION: FORMAT DOC NAMES
+#HELPER FUNCTION: format doc names
 makeDocNames <- function(){
   # use qr code info to format file names
   
@@ -298,13 +303,13 @@ makeDocNames <- function(){
   }
 }
 
-#RENDER: DOCUMENT NAME AND DIMENSIONS
+#RENDER: document name and dimensions
 output$upload_path <- renderText({paste0("Upload path: ", values$upload_path)})
 output$current_path <- renderText({paste0("Current path: ", values$current_path)})
 output$image_name <- renderText({paste0("Name: ", values$image_name)})
 output$dimensions <- renderText({paste0("Dimensions: ", values$dimensions)})
 
-#RENDER: QR CODE INFO
+#RENDER: qr code info
 output$qr <- renderText({paste0("QR Code: ", values$qr)})
 output$doc_type <- renderText({paste0("Document Type: ", values$doc_type)})
 output$writer <- renderText({paste0("Writer: ", values$writer)})
@@ -313,7 +318,7 @@ output$prompt <- renderText({paste0("Prompt: ", values$prompt)})
 output$repetition <- renderText({paste0("Repetition: ", values$repetition)})
 output$initials <- renderText({paste0("Initials: ", values$initials)})
 
-#BUTTON: SELECT QR CODE
+#BUTTON: select qr code
 observeEvent(input$select_qr, {
   
   if(is.null(input$preprocess_plot_brush)){
@@ -352,19 +357,19 @@ observeEvent(input$select_qr, {
 
 
 # Rotation ----------------------------------------------------------------
-#BUTTON: ROTATE LEFT
+#BUTTON: rotate left
 observeEvent(input$left, {
   output$error <- renderText({""})
   updateSliderInput(session, "rotation", value = input$rotation - 1)
 })
 
-#BUTTON: ROTATE RIGHT
+#BUTTON: rotate right
 observeEvent(input$right, {
   output$error <- renderText({""})
   updateSliderInput(session, "rotation", value = input$rotation + 1)
 })
 
-#BUTTON: RESET CROP
+#BUTTON: reset crop
 observeEvent(input$reset_crop, {
   output$error <- renderText({""})
   values$image <- values$uploaded_image
@@ -384,7 +389,7 @@ observeEvent(input$reset_crop, {
 
 
 # Cropping ----------------------------------------------------------------
-#BUTTON: UNDO CROP
+#BUTTON: undo crop
 observeEvent(input$undo_crop, {
   output$error <- renderText({""})
   values$image <- tail(values$crop_list, 2)[[1]]
@@ -406,7 +411,7 @@ observeEvent(input$undo_crop, {
   image_write(values$image, file.path("images", "temp", "tmp.png")); values$current_path <- file.path("images", "temp", "tmp.png")
 })
 
-#BUTTON: CROP
+#BUTTON: crop
 observeEvent(input$crop, {
   
   if(is.null(input$preprocess_plot_brush)){
@@ -439,7 +444,7 @@ observeEvent(input$crop, {
     image_write(values$image, file.path("images", "temp", "tmp.png")); values$current_path <- file.path("images", "temp", "tmp.png")
   }})
 
-#SAVE: CROPPED
+#SAVE: crop
 observeEvent(input$save_crop, {
   # Return error if cropped document already exists. Otherwise, save the cropped document.
   if(file.exists(values$crop_path)){
@@ -460,7 +465,7 @@ observeEvent(input$save_crop, {
 })
 
 # Masking -----------------------------------------------------------------
-#BUTTON: RESET MASK
+#BUTTON: reset mask
 observeEvent(input$reset_mask, {
   if(nrow(values$mask_list_df) == 0){
     output$error <- renderText({"No mask to remove"})
@@ -471,7 +476,7 @@ observeEvent(input$reset_mask, {
   }
 })
 
-#BUTTON: UNDO MASK
+#BUTTON: undo mask
 observeEvent(input$undo_mask, {
   if(nrow(values$mask_list_df) == 0){
     output$error <- renderText({"No mask to undo"})
@@ -485,7 +490,7 @@ observeEvent(input$undo_mask, {
     }
   }})
 
-#BUTTON: MASK
+#BUTTON: mask
 #Adds mask coordinates to mask_list
 observeEvent(input$mask, {
   if(is.null(input$preprocess_plot_brush)){
@@ -508,7 +513,7 @@ observeEvent(input$mask, {
     message(values$mask_list_df)
   }})
 
-#RENDER: IMAGE WITH MASK
+#RENDER: image with mask
 output$preprocess_plot_masked <- renderImage({
   tmp = values$image
   if(nrow(values$mask_list_df) == 0){
@@ -535,7 +540,7 @@ output$preprocess_plot_masked <- renderImage({
   list(src = tmp, contentType = "image/png")
 }, deleteFile = FALSE)
 
-#SAVE: MASK 
+#SAVE: mask
 output$save_mask <- downloadHandler(
   filename <- function(){
     paste("image_masked.RData")
@@ -570,6 +575,65 @@ output$save_mask <- downloadHandler(
   }
 )
 
+
+
+
+# Data Checks -------------------------------------------------------------
+listAllDocs <- function(){
+  # create a list of every document that a writer should have
+  
+  # survey csv files
+  survey_csvs <- file.path(values$main_dir, "Stage3_Survey_Data", "Spreadsheets", values$writer, paste0(values$writer, "_survey", 1:3, ".csv"))
+  
+  # survey scan files
+  survey_scans <- file.path(values$main_dir, "Stage3_Survey_Data", "Sorted", values$writer, paste0(values$writer, "_survey", 1:3, ".png"))
+  
+  # signature scans 
+  sig_scans <- file.path(values$main_dir, "Stage2_Sorted", "Signatures", values$writer, paste0(values$writer, 1:3, "_scan.png"))
+  
+  # signature crops
+  sig_crops <- file.path(values$main_dir, "Stage4_Cropped", "Signatures", values$writer, paste0(values$writer, 1:3, ".png"))
+  
+  # writing scans and crops
+  writing_scans <- writing_crops <- c()
+  s = c("_s01", "_s02", "_s03")
+  p = c("_pLND", "_pWOZ", "_pPHR")
+  r = c("_r01", "_r02", "_r03")
+  for (i in 1:3){
+    for (j in 1:3){
+      for (k in 1:3){
+        temp_scan <- file.path(values$main_dir, "Stage2_Sorted", "Writing", values$writer, paste0(values$writer, s[i], p[j], r[k], "_scan.png"))
+        temp_crop <- file.path(values$main_dir, "Stage4_Cropped", "Writing", values$writer, paste0(values$writer, s[i], p[j], r[k], ".png"))
+        writing_scans <- c(writing_scans, temp_scan)
+        writing_crops <- c(writing_crops, temp_crop)
+      }
+    }
+  }
+  
+  df = data.frame("full_path" = survey_csvs, "doc_type" = "survey")
+  df = rbind(df, data.frame("full_path" = survey_scans, "doc_type" = "survey"))
+  df = rbind(df, data.frame("full_path" = sig_scans, "doc_type" = "signature"))
+  df = rbind(df, data.frame("full_path" = sig_crops, "doc_type" = "signature"))
+  df = rbind(df, data.frame("full_path" = writing_scans, "doc_type" = "writing"))
+  df = rbind(df, data.frame("full_path" = writing_crops, "doc_type" = "writing"))
+  df['file'] = basename(df$full_path)
+  
+  return(df)
+}
+
+output$docs_missing <- renderDataTable({
+  # Filter for missing docs
+  missing <- data$df[!file.exists(data$df$full_path),]
+  # Select columns
+  missing[,c("doc_type", "file")]
+  })
+
+output$docs_processed <- renderDataTable({
+  # Filter for processed docs
+  processed <- data$df[file.exists(data$df$full_path),]
+  # Select columns
+  processed[,c("doc_type", "file")]
+})
 
 # Testing -----------------------------------------------------------------
 output$csv_path <- renderText({survey$csv_path})

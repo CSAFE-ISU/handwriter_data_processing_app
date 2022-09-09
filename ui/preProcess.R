@@ -7,7 +7,6 @@ tabPanel("Pre-process",
                         fileInput("upload", "Choose a new document to process", accept = c('image/png')),
                         hr(),
                         h4("Current document:"),
-                        fluidRow(column(width=11, offset=1, textOutput("dimensions"))),
                         fluidRow(column(width=11, offset=1, textOutput("qr"))),
                         fluidRow(column(width=11, offset=1, textOutput("doc_type"))),
                         fluidRow(column(width=11, offset=1, textOutput("writer"))),
@@ -121,6 +120,7 @@ tabPanel("Pre-process",
                                             condition = "output.doc_type == 'Document Type: survey'",
                                             tableOutput("survey_table")
                                           ),
+                                          # Survey1 only panel
                                           conditionalPanel(
                                             condition = "output.doc_type == 'Document Type: survey' && output.session == 'Session: 1'",
                                             tableOutput("survey1_table")
@@ -140,6 +140,12 @@ tabPanel("Pre-process",
                                           ),
                                           hr(),
                                           imageOutput("preprocess_plot_masked", brush = brushOpts(id = "preprocess_plot_brush", resetOnNew = TRUE))
+                                 ),
+                                 tabPanel("Data Checks",
+                                          h4("Missing Documents"),
+                                          dataTableOutput("docs_missing"),
+                                          h4("Processed Documents"),
+                                          dataTableOutput("docs_processed"),
                                  )
                      ),
            )

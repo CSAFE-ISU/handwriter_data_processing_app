@@ -43,6 +43,11 @@ server <- function(input, output, session) {
   # qr code
   values$qr <- NULL
   
+  # data checks 
+  data <- reactiveValues()
+  data$df <- data.frame(matrix(nrow=0, ncol=3,dimnames=list(NULL, c("full_path", "doc_type", "file"))))
+
+  
   # main directory based on OS (Darwin = Mac)
   switch(Sys.info()[['sysname']],
          Windows = {values$main_dir = "/lss/research/csafe-handwriting-irb/Data_Processing_App_Testing"},
