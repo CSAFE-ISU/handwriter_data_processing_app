@@ -37,7 +37,8 @@ values$mask_list_df <- mask_list_df
 values$crop_list <- list(image)
 
 # qr code
-values$qr <- NULL
+qr <- reactiveValues()
+qr$code <- NULL
 
 # data checks 
 data <- reactiveValues()
@@ -70,10 +71,6 @@ observeEvent(input$upload, {
   values$uploaded_image <- NULL
   data$df <- data.frame(matrix(nrow=0, ncol=3,dimnames=list(NULL, c("full_path", "doc_type", "file"))))
   
-  # reset qr code reactive values
-  values$doc_type <- "default"
-  values$writer <- values$session <- values$prompt <- values$repetition <- values$initials <- values$scan_name <- values$scan_path <- values$crop_name <- values$crop_path <- values$qr_path <- NULL
-  
   # reset survey responses input boxes
   updateTextInput(session, "response_initials", value = "")
   updateTextInput(session, "response_location", value = "")
@@ -100,12 +97,23 @@ observeEvent(input$upload, {
     values$info <- image_info(values$image)
   }
   
-  # read QR code and get document info
-  values$qr <- quadrangle::qr_scan(values$image)$values$value  # read qr code
+  # update current document info
+  values$image_name <- input$upload$name
+  
+  # reset crop list and mask list
+  values$crop_list <- list(values$image)
+  values$mask_list_df <- values$mask_list_df[0,]  # keep column names, clear all rows
+  
+  # reset qr code reactive values in case qr code doesn't read automatically on upload
+  values$doc_type <- "default"
+  qr$writer <- qr$session <- qr$prompt <- qr$repetition <- qr$initials <- qr$scan_name <- qr$scan_path <- qr$crop_name <- qr$crop_path <- qr$qr_path <- NULL
+  
+  # read qr code and get document info
+  qr$code <- quadrangle::qr_scan(values$image)$values$value  # read qr code
   # if qr code isn't empty, format doc names
-  if (length(values$qr) != 0){
+  if (length(qr$code) != 0){
     # get info from qr code
-    splitQR(values$qr)
+    splitQR(qr$code)
     # format document names
     makeDocNames()
     # enable save scan button
@@ -116,16 +124,9 @@ observeEvent(input$upload, {
   
   # extract number from writer id for survey response table
   if (values$doc_type == 'survey'){
-    id <- stringr::str_extract(values$writer, "\\d+")
+    id <- stringr::str_extract(qr$writer, "\\d+")
     survey$df['WID'] <- as.integer(id)
   }
-  
-  # update current document info
-  values$image_name <- input$upload$name
-
-  # clean up
-  values$crop_list <- list(values$image)
-  values$mask_list_df <- values$mask_list_df[0,]  # keep column names, clear all rows
 })
 
 #RENDER: image
@@ -157,20 +158,20 @@ output$preprocess_plot <- renderImage({
 #SAVE: scan
 observeEvent(input$save_scan, {
   # Return error if scan already exists. Otherwise, save the scan.
-  if(file.exists(values$scan_path)){
-    output$error <- renderText({paste0("Scan already exists: ", values$scan_path, "\n Manually delete scan if you want to save an updated version.")})
+  if(file.exists(qr$scan_path)){
+    output$error <- renderText({paste0("Scan already exists: ", qr$scan_path, "\n Manually delete scan if you want to save an updated version.")})
   }else{ 
     output$error <- renderText({""})
     
     # make writer folder for scan
-    if (!dir.exists(dirname(values$scan_path))){
-      dir.create(dirname(values$scan_path))
+    if (!dir.exists(dirname(qr$scan_path))){
+      dir.create(dirname(qr$scan_path))
     }
     
     # save original scan
     values$uploaded_image %>% 
       image_rotate(input$rotation) %>% 
-      image_write(path=values$scan_path, format = 'png')
+      image_write(path=qr$scan_path, format = 'png')
   }
 })
 
@@ -239,7 +240,7 @@ observeEvent(input$save_survey, {
     dir.create(dirname(survey$csv_path))
   }
   
-  if (values$session == 1){
+  if (qr$session == 1){
     # combine dataframes
     df = cbind(survey$df, survey$df1)
     
@@ -267,32 +268,32 @@ observeEvent(input$save_survey, {
 
 # QR CODE -----------------------------------------------------------------
 #HELPER FUNCTION: split qr code
-splitQR <- function(qr){
+splitQR <- function(qr_code){
   # split qr string
-  qr_split <- unlist(stringr::str_split(qr, "/"))
+  qr_split <- unlist(stringr::str_split(qr_code, "/"))
   
   # grab doc type (surveys, writing, or signatures) and writer
   values$doc_type = qr_split[1]
-  values$writer = qr_split[2]
+  qr$writer = qr_split[2]
   
   # grab additional survey info. qr string format: surveys/w0001/survey1
   if (values$doc_type == "surveys"){
     # change to singular
     values$doc_type <- "survey"
     # grab session
-    values$session <- as.numeric(gsub(".*?([0-9]+).*", "\\1", qr_split[3]))
+    qr$session <- as.numeric(gsub(".*?([0-9]+).*", "\\1", qr_split[3]))
   }
   
   # graph additional writer info. qr string format: writing/w0001/s01/pWOZ_r1
   if (values$doc_type == "writing"){ 
     # grab session number
-    values$session = as.numeric(gsub(".*?([0-9]+).*", "\\1", qr_split[3]))
+    qr$session = as.numeric(gsub(".*?([0-9]+).*", "\\1", qr_split[3]))
     # split prompt and repetition
     prompt_rep = unlist(stringr::str_split(qr_split[4], "_"))
     # grab prompt. drop the "p"
-    values$prompt = stringr::str_replace(prompt_rep[1], "p","")
+    qr$prompt = stringr::str_replace(prompt_rep[1], "p","")
     # grab the repetition number
-    values$repetition = as.numeric(gsub(".*?([0-9]+).*", "\\1", prompt_rep[2]))
+    qr$repetition = as.numeric(gsub(".*?([0-9]+).*", "\\1", prompt_rep[2]))
   }
   
   # grab addition signatures info. qr string format: signatures/w0001/JE
@@ -300,7 +301,7 @@ splitQR <- function(qr){
     # change to singular
     values$doc_type <- "signature"
     # grab initials
-    values$initials = qr_split[3]
+    qr$initials = qr_split[3]
   }
 }
 
@@ -311,29 +312,29 @@ makeDocNames <- function(){
   # format survey
   if (values$doc_type == "survey"){
     # scan
-    values$scan_name <- paste0(values$writer,"_survey",values$session, ".png")
-    values$scan_path <- file.path(values$main_dir, "Stage3_Survey_Data", "Sorted", values$writer, values$scan_name)
+    qr$scan_name <- paste0(qr$writer,"_survey",qr$session, ".png")
+    qr$scan_path <- file.path(values$main_dir, "Stage3_Survey_Data", "Sorted", qr$writer, qr$scan_name)
     
     # crop
-    values$crop_name <- NULL
-    values$crop_path <- NULL
+    qr$crop_name <- NULL
+    qr$crop_path <- NULL
     
     # csv
-    survey$csv_name <- paste0(values$writer, "_survey", values$session, ".csv")
-    survey$csv_path <- file.path(values$main_dir, "Stage3_Survey_Data", "Spreadsheets", values$writer, survey$csv_name)
+    survey$csv_name <- paste0(qr$writer, "_survey", qr$session, ".csv")
+    survey$csv_path <- file.path(values$main_dir, "Stage3_Survey_Data", "Spreadsheets", qr$writer, survey$csv_name)
   } 
   
   # format writing
   if (values$doc_type == "writing"){
     # scan
-    session <- stringr::str_pad(values$session, width = 2, side = "left", pad = 0)
-    repetition <- stringr::str_pad(values$repetition, width = 2, side = "left", pad = 0)
-    values$scan_name <- paste0(values$writer,"_s", session, "_p", values$prompt, "_r", repetition, "_scan.png")
-    values$scan_path <- file.path(values$main_dir, "Stage2_Sorted", "Writing", values$writer, values$scan_name)
+    session <- stringr::str_pad(qr$session, width = 2, side = "left", pad = 0)
+    repetition <- stringr::str_pad(qr$repetition, width = 2, side = "left", pad = 0)
+    qr$scan_name <- paste0(qr$writer,"_s", session, "_p", qr$prompt, "_r", repetition, "_scan.png")
+    qr$scan_path <- file.path(values$main_dir, "Stage2_Sorted", "Writing", qr$writer, qr$scan_name)
     
     # cropped
-    values$crop_name <- paste0(values$writer,"_s", session, "_p", values$prompt, "_r", repetition, ".png")
-    values$crop_path <- file.path(values$main_dir, "Stage4_Cropped", "Writing", values$writer, values$crop_name)
+    qr$crop_name <- paste0(qr$writer,"_s", session, "_p", qr$prompt, "_r", repetition, ".png")
+    qr$crop_path <- file.path(values$main_dir, "Stage4_Cropped", "Writing", qr$writer, qr$crop_name)
   
     # csv
     survey$csv_name <- NULL
@@ -343,12 +344,12 @@ makeDocNames <- function(){
   # format signature scan
   if (values$doc_type == "signature"){
     # scan
-    values$scan_name <- paste0(values$writer,"_", values$initials, "_scan.png")
-    values$scan_path <- file.path(values$main_dir, "Stage2_Sorted", "Signatures", values$writer, values$scan_name)
+    qr$scan_name <- paste0(qr$writer,"_", qr$initials, "_scan.png")
+    qr$scan_path <- file.path(values$main_dir, "Stage2_Sorted", "Signatures", qr$writer, qr$scan_name)
     
     # cropped
-    values$crop_name <- paste0(values$writer,"_", values$initials, ".png")
-    values$crop_path <- file.path(values$main_dir, "Stage4_Cropped", "Signatures", values$writer, values$crop_name)
+    qr$crop_name <- paste0(qr$writer,"_", qr$initials, ".png")
+    qr$crop_path <- file.path(values$main_dir, "Stage4_Cropped", "Signatures", qr$writer, qr$crop_name)
     
     # csv
     survey$csv_name <- NULL
@@ -363,13 +364,13 @@ output$image_name <- renderText({paste0("Name: ", values$image_name)})
 output$dimensions <- renderText({paste0("Dimensions: ", values$dimensions)})
 
 #RENDER: qr code info
-output$qr <- renderText({paste0("QR Code: ", values$qr)})
+output$qr <- renderText({paste0("QR Code: ", qr$code)})
 output$doc_type <- renderText({paste0("Document Type: ", values$doc_type)})
-output$writer <- renderText({paste0("Writer: ", values$writer)})
-output$session <- renderText({paste0("Session: ", values$session)})
-output$prompt <- renderText({paste0("Prompt: ", values$prompt)})
-output$repetition <- renderText({paste0("Repetition: ", values$repetition)})
-output$initials <- renderText({paste0("Initials: ", values$initials)})
+output$writer <- renderText({paste0("Writer: ", qr$writer)})
+output$session <- renderText({paste0("Session: ", qr$session)})
+output$prompt <- renderText({paste0("Prompt: ", qr$prompt)})
+output$repetition <- renderText({paste0("Repetition: ", qr$repetition)})
+output$initials <- renderText({paste0("Initials: ", qr$initials)})
 
 #BUTTON: select qr code
 observeEvent(input$select_qr, {
@@ -389,18 +390,18 @@ observeEvent(input$select_qr, {
     
     # crop qr code
     if(!is.null(xrange) && !is.null(yrange)){
-      values$qr_image = image_crop(values$image, paste(xrange,'x', yrange, '+', xmin, '+', ymin))
+      qr$image = image_crop(values$image, paste(xrange,'x', yrange, '+', xmin, '+', ymin))
     }
     
     # write qr code to temp file
-    image_write(values$qr_image, file.path("images", "temp", "tmp_qr.png"))
-    values$qr_path <- file.path("images", "temp", "tmp_qr.png")
+    image_write(qr$image, file.path("images", "temp", "tmp_qr.png"))
+    qr$qr_path <- file.path("images", "temp", "tmp_qr.png")
     
     # read qr code from temp file
-    values$qr <- quadrangle::qr_scan(values$qr_path)$values$value  # read qr code
+    qr$code <- quadrangle::qr_scan(qr$qr_path)$values$value  # read qr code
     # extract writer, session, etc. if qr code isn't empty
-    if (length(values$qr) != 0){
-      splitQR(values$qr)
+    if (length(qr$code) != 0){
+      splitQR(qr$code)
       # format document names
       makeDocNames()
       # enable save scan button
@@ -500,20 +501,20 @@ observeEvent(input$crop, {
 #SAVE: crop
 observeEvent(input$save_crop, {
   # Return error if cropped document already exists. Otherwise, save the cropped document.
-  if(file.exists(values$crop_path)){
-    output$error <- renderText({paste0("Cropped document already exists: ", values$crop_path, "\n Manually delete scan if you want to save an updated version.")})
+  if(file.exists(qr$crop_path)){
+    output$error <- renderText({paste0("Cropped document already exists: ", qr$crop_path, "\n Manually delete scan if you want to save an updated version.")})
   }else{ 
     output$error <- renderText({""})
     
     # make writer folder for cropped document
-    if (!dir.exists(dirname(values$crop_path))){
-      dir.create(dirname(values$crop_path))
+    if (!dir.exists(dirname(qr$crop_path))){
+      dir.create(dirname(qr$crop_path))
     }
     
     # save original cropped document
     values$image %>% 
       image_rotate(input$rotation) %>% 
-      image_write(path=values$crop_path, format = 'png')
+      image_write(path=qr$crop_path, format = 'png')
   }
 })
 
@@ -636,16 +637,16 @@ listAllDocs <- function(){
   # create a list of every document that a writer should have
   
   # survey csv files
-  survey_csvs <- file.path(values$main_dir, "Stage3_Survey_Data", "Spreadsheets", values$writer, paste0(values$writer, "_survey", 1:3, ".csv"))
+  survey_csvs <- file.path(values$main_dir, "Stage3_Survey_Data", "Spreadsheets", qr$writer, paste0(qr$writer, "_survey", 1:3, ".csv"))
   
   # survey scan files
-  survey_scans <- file.path(values$main_dir, "Stage3_Survey_Data", "Sorted", values$writer, paste0(values$writer, "_survey", 1:3, ".png"))
+  survey_scans <- file.path(values$main_dir, "Stage3_Survey_Data", "Sorted", qr$writer, paste0(qr$writer, "_survey", 1:3, ".png"))
   
   # signature scans 
-  sig_scans <- file.path(values$main_dir, "Stage2_Sorted", "Signatures", values$writer, paste0(values$writer, 1:3, "_scan.png"))
+  sig_scans <- file.path(values$main_dir, "Stage2_Sorted", "Signatures", qr$writer, paste0(qr$writer, 1:3, "_scan.png"))
   
   # signature crops
-  sig_crops <- file.path(values$main_dir, "Stage4_Cropped", "Signatures", values$writer, paste0(values$writer, 1:3, ".png"))
+  sig_crops <- file.path(values$main_dir, "Stage4_Cropped", "Signatures", qr$writer, paste0(qr$writer, 1:3, ".png"))
   
   # writing scans and crops
   writing_scans <- writing_crops <- c()
@@ -655,8 +656,8 @@ listAllDocs <- function(){
   for (i in 1:3){
     for (j in 1:3){
       for (k in 1:3){
-        temp_scan <- file.path(values$main_dir, "Stage2_Sorted", "Writing", values$writer, paste0(values$writer, s[i], p[j], r[k], "_scan.png"))
-        temp_crop <- file.path(values$main_dir, "Stage4_Cropped", "Writing", values$writer, paste0(values$writer, s[i], p[j], r[k], ".png"))
+        temp_scan <- file.path(values$main_dir, "Stage2_Sorted", "Writing", qr$writer, paste0(qr$writer, s[i], p[j], r[k], "_scan.png"))
+        temp_crop <- file.path(values$main_dir, "Stage4_Cropped", "Writing", qr$writer, paste0(qr$writer, s[i], p[j], r[k], ".png"))
         writing_scans <- c(writing_scans, temp_scan)
         writing_crops <- c(writing_crops, temp_crop)
       }
@@ -690,7 +691,7 @@ output$docs_processed <- renderDataTable({
 
 # Testing -----------------------------------------------------------------
 output$csv_path <- renderText({survey$csv_path})
-output$scan_name <- renderText({paste0("Scan name: ", values$scan_name)})
-output$scan_path <- renderText({paste0("Scan path: ", values$scan_path)})
-output$crop_name <- renderText({paste0("Crop name: ", values$crop_name)})
-output$crop_path <- renderText({paste0("Crop path: ", values$crop_path)})
+output$scan_name <- renderText({paste0("Scan name: ", qr$scan_name)})
+output$scan_path <- renderText({paste0("Scan path: ", qr$scan_path)})
+output$crop_name <- renderText({paste0("Crop name: ", qr$crop_name)})
+output$crop_path <- renderText({paste0("Crop path: ", qr$crop_path)})
