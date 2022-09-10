@@ -55,23 +55,6 @@ if (!dir.exists(file.path("images", "temp"))){
 }
 
 
-# Original Scan -----------------------------------------------------------
-
-saveScan <- function(){
-  # save original scan
-  
-  # make writer folder for scan
-  if (!dir.exists(dirname(qr$scan_path))){
-    dir.create(dirname(qr$scan_path))
-  }
-  
-  # save original scan
-  values$uploaded_image %>% 
-    image_rotate(input$rotation) %>% 
-    image_write(path=qr$scan_path, format = 'png')
-}
-
-
 # Image -------------------------------------------------------------------
 #UPLOAD: document
 observeEvent(input$upload, {
@@ -171,6 +154,21 @@ output$preprocess_plot <- renderImage({
 }, deleteFile = FALSE)
 
 
+# Original Scan -----------------------------------------------------------
+#HELPER FUNCTION: save original scan
+saveScan <- function(){
+  # make writer folder for scan
+  if (!dir.exists(dirname(qr$scan_path))){
+    dir.create(dirname(qr$scan_path))
+  }
+  
+  # save original scan
+  values$uploaded_image %>% 
+    image_rotate(input$rotation) %>% 
+    image_write(path=qr$scan_path, format = 'png')
+}
+
+
 # Survey -----------------------------------------------------------------
 #CREATE: survey reactive values
 survey <- reactiveValues(
@@ -259,13 +257,19 @@ observeEvent(input$save_survey, {
   } else if (!file.exists(qr$scan_path) && file.exists(qr$csv_path)) { 
     output$error <- renderText({"Csv already exists. Manually delete file if you want to save an updated version."})
     saveScan()
+    # update list of docs for current writer
+    data$df <- listAllDocs()
   } else if (file.exists(qr$scan_path) && !file.exists(qr$csv_path)){
     output$error <- renderText({"Scan already exists. Manually delete file if you want to save an updated version."})
     saveCSV()
+    # update list of docs for current writer
+    data$df <- listAllDocs()
   } else {
     output$error <- renderText({""})
     saveScan()
     saveCSV()
+    # update list of docs for current writer
+    data$df <- listAllDocs()
   }
 })
 
@@ -410,6 +414,8 @@ observeEvent(input$select_qr, {
       makeDocNames()
       # enable save scan button
       shinyjs::enable("save_scan")
+      # get list of docs for current writer
+      data$df <- listAllDocs()
     }
   }})
 
@@ -523,13 +529,19 @@ observeEvent(input$save_docs, {
   } else if (!file.exists(qr$scan_path) && file.exists(qr$crop_path)) { 
     output$error <- renderText({"Cropped document already exists. Manually delete file if you want to save an updated version."})
     saveScan()
+    # update list of docs for current writer
+    data$df <- listAllDocs()
   } else if (file.exists(qr$scan_path) && !file.exists(qr$crop_path)){
     output$error <- renderText({"Scan already exists. Manually delete file if you want to save an updated version."})
     saveCrop()
+    # update list of docs for current writer
+    data$df <- listAllDocs()
   } else {
     output$error <- renderText({""})
     saveScan()
     saveCrop()
+    # update list of docs for current writer
+    data$df <- listAllDocs()
   }
 })
 
@@ -645,9 +657,154 @@ output$save_mask <- downloadHandler(
 )
 
 
-
-
 # Data Checks -------------------------------------------------------------
+
+#HELPER FUNCTION: getPromptOrders
+# Make dataframe of prompt orders by for each treatment
+getPromptOrders <- function(){
+  treatmentA = data.frame(treatment = "A", 
+                          s1_prompt_order = "LND, WOZ, PHR", 
+                          s2_prompt_order = "WOZ, PHR, LND", 
+                          s3_prompt_order = "PHR, LND, WOZ")
+  treatmentB = data.frame(treatment = "B",
+                          s1_prompt_order = "WOZ, PHR, LND", 
+                          s2_prompt_order = "PHR, LND, WOZ", 
+                          s3_prompt_order = "LND, WOZ, PHR")
+  treatmentC = data.frame(treatment = "C",
+                          s1_prompt_order = "PHR, LND, WOZ", 
+                          s2_prompt_order = "LND, WOZ, PHR", 
+                          s3_prompt_order = "WOZ, PHR, LND")
+  treatments = rbind(treatmentA, treatmentB, treatmentC)
+  return(treatments)
+}
+
+#HELPER FUNCTION: getSignatureNames
+# Make a dataframe of signature names by writer ID
+getSignatureNames <- function(){
+  
+  # WID 1-60
+  df1 <- data.frame(WID_start = 1, 
+                    WID_end = 60, 
+                    treatment = "A", 
+                    s1_name = "Edward Franco", 
+                    s2_name = "Brad Harvey", 
+                    s3_name = "Nolan Henson")
+  # WID 61-120
+  df2 <- data.frame(WID_start = 61, 
+                    WID_end = 120, 
+                    treatment = "B", 
+                    s1_name = "Trisha Middleton", 
+                    s2_name = "Alec Adams", 
+                    s3_name = "Geoffrey Simon")
+  # WID 121-180
+  df3 <- data.frame(WID_start = 121, 
+                    WID_end = 180, 
+                    treatment = "C", 
+                    s1_name = "Bernard Crane", 
+                    s2_name = "Caroline Guerra", 
+                    s3_name = "Minnie Burch")
+  # WID 181-240
+  df4 <- data.frame(WID_start = 181, 
+                    WID_end = 240, 
+                    treatment = "A", 
+                    s1_name = "Jordi Howe", 
+                    s2_name = "Isabella Gamble", 
+                    s3_name = "Kristin Bautista")
+  # WID 241-300
+  df5 <- data.frame(WID_start = 241,
+                    WID_end = 300, 
+                    treatment = "B", 
+                    s1_name = "Brenden Dyer", 
+                    s2_name = "Aiden Fry", 
+                    s3_name = "Milton Perkins")
+  # WID 301-360
+  df6 <- data.frame(WID_start = 301, 
+                    WID_end = 360, 
+                    treatment = "C", 
+                    s1_name = "Diane Carson", 
+                    s2_name = "Tommy Case", 
+                    s3_name = "Zoey Mills")
+  # WID 361-420
+  df7 <- data.frame(WID_start = 361, 
+                    WID_end = 420, 
+                    treatment = "A", 
+                    s1_name = "Ivan Brewer", 
+                    s2_name = "Natasha Woods", 
+                    s3_name = "Herman Shaw")
+  # WID 421-480
+  df8 <- data.frame(WID_start = 421, 
+                    WID_end = 480, 
+                    treatment = "B", 
+                    s1_name = "Nettie Brooks", 
+                    s2_name = "Lawrence Richards", 
+                    s3_name = "Cecelia Franklin")
+  # WID 481-540
+  df9 <- data.frame(WID_start = 481, 
+                    WID_end = 540, 
+                    treatment = "C", 
+                    s1_name = "Paul Conner", 
+                    s2_name = "Elsa Medina", 
+                    s3_name = "David Gill")
+  # WID 541-600
+  df10 <- data.frame(WID_start = 541, 
+                     WID_end = 600, 
+                     treatment = "A", 
+                     s1_name = "Samuel Scott", 
+                     s2_name = "Karen Turner", 
+                     s3_name = "Aurthur Bell")
+  # WID 601-660
+  df11 <- data.frame(WID_start = 601, 
+                     WID_end = 660, 
+                     treatment = "B", 
+                     s1_name = "Judy Evans", 
+                     s2_name = "Terry Harris", 
+                     s3_name = "Martha Harris")
+  # WID 661-720
+  df12 <- data.frame(WID_start = 661, 
+                     WID_end = 720, 
+                     treatment = "C", 
+                     s1_name = "Stephen James", 
+                     s2_name = "Rosa Santiago", 
+                     s3_name = "William Green")
+  
+  # Master dataframe
+  df <- rbind(df1, df2, df3, df4, df5, df6, df7, df8, df9, df10, df11, df12)
+  
+  # Get initials for session 1
+  initials1 <- stringr::str_extract_all(df$s1_name, "[A-Z]+")  # extract capital letters from names
+  initials1 <- unlist(lapply(initials1, function(x) paste0(x[1], x[2])))  # concatenate letters
+  df['s1_initials'] <- initials1
+  
+  # Get initials for session 2
+  initials2 <- stringr::str_extract_all(df$s2_name, "[A-Z]+")  # extract capital letters from names
+  initials2 <- unlist(lapply(initials2, function(x) paste0(x[1], x[2])))  # concatenate letters
+  df['s2_initials'] <- initials2
+  
+  # Get initials for session 3
+  initials3 <- stringr::str_extract_all(df$s3_name, "[A-Z]+")  # extract capital letters from names
+  initials3 <- unlist(lapply(initials3, function(x) paste0(x[1], x[2])))  # concatenate letters
+  df['s3_initials'] <- initials3
+  
+  return(df)
+}
+
+#HELPER FUNCTION: lookupInitials
+# Lookup the signature initials based on writer id 
+lookupInitials <- function(writer){
+  
+  id <- stringr::str_extract(writer, "\\d+")
+  id <- as.integer(id)
+  
+  df <- getSignatureNames()
+  
+  # filter by writer id #
+  df <- df[df$WID_start <= id & df$WID_end >= id,]
+  
+  # make vector of initials
+  initials <- c(df$s1_initials, df$s2_initials, df$s3_initials)
+  return(initials)
+}
+
 listAllDocs <- function(){
   # create a list of every document that a writer should have
   
@@ -657,11 +814,14 @@ listAllDocs <- function(){
   # survey scan files
   survey_scans <- file.path(values$main_dir, "Stage3_Survey_Data", "Sorted", qr$writer, paste0(qr$writer, "_survey", 1:3, ".png"))
   
+  # get signature initials
+  initials <- lookupInitials(writer = qr$writer)
+  
   # signature scans 
-  sig_scans <- file.path(values$main_dir, "Stage2_Sorted", "Signatures", qr$writer, paste0(qr$writer, 1:3, "_scan.png"))
+  sig_scans <- file.path(values$main_dir, "Stage2_Sorted", "Signatures", qr$writer, paste0(qr$writer, "_", initials, "_scan.png"))
   
   # signature crops
-  sig_crops <- file.path(values$main_dir, "Stage4_Cropped", "Signatures", qr$writer, paste0(qr$writer, 1:3, ".png"))
+  sig_crops <- file.path(values$main_dir, "Stage4_Cropped", "Signatures", qr$writer, paste0(qr$writer, "_", initials, ".png"))
   
   # writing scans and crops
   writing_scans <- writing_crops <- c()
@@ -690,14 +850,14 @@ listAllDocs <- function(){
   return(df)
 }
 
-output$docs_missing <- renderDataTable({
+output$docs_missing <- renderDT({
   # Filter for missing docs
   missing <- data$df[!file.exists(data$df$full_path),]
   # Select columns
   missing[,c("doc_type", "file")]
   })
 
-output$docs_processed <- renderDataTable({
+output$docs_processed <- renderDT({
   # Filter for processed docs
   processed <- data$df[file.exists(data$df$full_path),]
   # Select columns

@@ -139,9 +139,9 @@ tabPanel("Pre-process",
                                  ),
                                  tabPanel("Data Checks",
                                           h4("Missing Documents"),
-                                          dataTableOutput("docs_missing"),
+                                          DTOutput("docs_missing"),
                                           h4("Processed Documents"),
-                                          dataTableOutput("docs_processed"),
+                                          DTOutput("docs_processed"),
                                  )
                      ),
            )
