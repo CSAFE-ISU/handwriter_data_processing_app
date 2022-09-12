@@ -130,6 +130,7 @@ observeEvent(input$upload, {
   if (values$doc_type == 'survey'){
     id <- stringr::str_extract(qr$writer, "\\d+")
     survey$df['WID'] <- as.integer(id)
+    survey$df['Session'] <- qr$session
   }
 })
 
@@ -179,53 +180,55 @@ survey <- reactiveValues(
   # all surveys
   df = data.frame(
     "WID" = "",
+    "Session" = "",
     "Initials" = "",
     "Location" = "",
     "Time" = "",
     "Date" = ""),
   # survey1 only
   df1 = data.frame(
-    "ThirdGradeLoc" = "",
-    "Age" = "",
-    "Language" = "",
-    "Gender" = "",
-    "Other" = "",
-    "Ethnicity" = "",
-    "Edu" = "",
-    "Hand" = ""
+    "ThirdGradeLoc" = NA,
+    "Age" = NA,
+    "Language" = NA,
+    "Gender" = NA,
+    "Other" = NA,
+    "Ethnicity" = NA,
+    "Edu" = NA,
+    "Hand" = NA
   )
 )
 
-#HELPER FUNCTION: saveCSV
-saveCSV <- function(){
+#HELPER FUNCTION: saveResponses
+saveResponses <- function(){
   # make writer folder for csv
   if (!dir.exists(dirname(qr$csv_path))){
     dir.create(dirname(qr$csv_path))
   }
   
-  if (qr$session == 1){
-    # combine dataframes
-    df = cbind(survey$df, survey$df1)
-    
-    # sort columns to match previous csv files
-    sorted = df[c("WID", "Initials", "Location", "Date", "Time", "ThirdGradeLoc",
-                  "Age", "Language", "Gender", "Other", "Ethnicity", "Edu",
-                  "Hand")]
-    
-    # save csv
-    write.csv(sorted, file = qr$csv_path)
-  } else {
-    df = survey$df
-    
-    # sort columns to match previous csv files
-    sorted = df[c("WID", "Initials", "Location", "Date", "Time")]
-    
-    # rename column to match previous csv files
-    colnames(sorted)[colnames(sorted) == "Location"] <- "Current_Location"
-    
-    # save csv
-    write.csv(sorted, file = qr$csv_path)
+  # combine dataframes 
+  df = cbind(survey$df, survey$df1)
+  
+  # set session 1 columns to NA for session 2 and 3 responses
+  if (qr$session != 1){
+    df[,colnames(survey$df1)] <- NA
   }
+  
+  # save csv
+  write.csv(df, file = qr$csv_path, row.names = FALSE)
+  
+  # load or create master speadsheet
+  if (file.exists(qr$master_path)){
+    # load
+    master <- read.csv(qr$master_path)
+    # add new responses
+    master <- rbind(master, df)
+  } else {
+    # make master current responses
+    master <- df
+  }
+  
+  write.csv(master, file = qr$master_path, row.names = FALSE)
+  
 }
 
 #UPDATE: survey values
@@ -267,7 +270,7 @@ observeEvent(input$save_survey, {
     data$processed <- data$df[file.exists(data$df$full_path),]
   } else if (file.exists(qr$scan_path) && !file.exists(qr$csv_path)){
     output$error <- renderText({"Scan already exists. Manually delete file if you want to save an updated version."})
-    saveCSV()
+    saveResponses()
     # Update missing docs
     data$missing <- data$df[!file.exists(data$df$full_path),]
     # Update processed docs
@@ -275,7 +278,7 @@ observeEvent(input$save_survey, {
   } else {
     output$error <- renderText({""})
     saveScan()
-    saveCSV()
+    saveResponses()
     # Update missing docs
     data$missing <- data$df[!file.exists(data$df$full_path),]
     # Update processed docs
@@ -299,7 +302,7 @@ splitQR <- function(qr_code){
     # change to singular
     values$doc_type <- "survey"
     # grab session
-    qr$session <- as.numeric(gsub(".*?([0-9]+).*", "\\1", qr_split[3]))
+    qr$session <- as.integer(gsub(".*?([0-9]+).*", "\\1", qr_split[3]))
   }
   
   # graph additional writer info. qr string format: writing/w0001/s01/pWOZ_r1
@@ -340,6 +343,10 @@ makeDocNames <- function(){
     # csv
     qr$csv_name <- paste0(qr$writer, "_survey", qr$session, ".csv")
     qr$csv_path <- file.path(values$main_dir, "Stage3_Survey_Data", "Spreadsheets", qr$writer, qr$csv_name)
+    
+    # master spreadsheet
+    qr$master_name <- "survey_responses.csv"
+    qr$master_path <- file.path(values$main_dir, "Stage3_Survey_Data", "Spreadsheets", qr$master_name)
   } 
   
   # format writing
@@ -357,6 +364,10 @@ makeDocNames <- function(){
     # csv
     qr$csv_name <- NULL
     qr$csv_path <- NULL
+    
+    # master spreadsheet
+    qr$master_name <- NULL
+    qr$master_path <- NULL
   }
   
   # format signature scan
@@ -372,6 +383,10 @@ makeDocNames <- function(){
     # csv
     qr$csv_name <- NULL
     qr$csv_path <- NULL
+    
+    # master spreadsheet
+    qr$master_name <- NULL
+    qr$master_path <- NULL
   }
 }
 
