@@ -120,6 +120,10 @@ observeEvent(input$upload, {
     shinyjs::enable("save_scan")
     # get list of docs for current writer
     data$df <- listAllDocs()
+    # Find missing docs
+    data$missing <- data$df[!file.exists(data$df$full_path),]
+    # Find processed docs
+    data$processed <- data$df[file.exists(data$df$full_path),]
   }
   
   # extract number from writer id for survey response table
@@ -257,19 +261,25 @@ observeEvent(input$save_survey, {
   } else if (!file.exists(qr$scan_path) && file.exists(qr$csv_path)) { 
     output$error <- renderText({"Csv already exists. Manually delete file if you want to save an updated version."})
     saveScan()
-    # update list of docs for current writer
-    data$df <- listAllDocs()
+    # Update missing docs
+    data$missing <- data$df[!file.exists(data$df$full_path),]
+    # Update processed docs
+    data$processed <- data$df[file.exists(data$df$full_path),]
   } else if (file.exists(qr$scan_path) && !file.exists(qr$csv_path)){
     output$error <- renderText({"Scan already exists. Manually delete file if you want to save an updated version."})
     saveCSV()
-    # update list of docs for current writer
-    data$df <- listAllDocs()
+    # Update missing docs
+    data$missing <- data$df[!file.exists(data$df$full_path),]
+    # Update processed docs
+    data$processed <- data$df[file.exists(data$df$full_path),]
   } else {
     output$error <- renderText({""})
     saveScan()
     saveCSV()
-    # update list of docs for current writer
-    data$df <- listAllDocs()
+    # Update missing docs
+    data$missing <- data$df[!file.exists(data$df$full_path),]
+    # Update processed docs
+    data$processed <- data$df[file.exists(data$df$full_path),]
   }
 })
 
@@ -529,19 +539,25 @@ observeEvent(input$save_docs, {
   } else if (!file.exists(qr$scan_path) && file.exists(qr$crop_path)) { 
     output$error <- renderText({"Cropped document already exists. Manually delete file if you want to save an updated version."})
     saveScan()
-    # update list of docs for current writer
-    data$df <- listAllDocs()
+    # Update missing docs
+    data$missing <- data$df[!file.exists(data$df$full_path),]
+    # Update processed docs
+    data$processed <- data$df[file.exists(data$df$full_path),]
   } else if (file.exists(qr$scan_path) && !file.exists(qr$crop_path)){
     output$error <- renderText({"Scan already exists. Manually delete file if you want to save an updated version."})
     saveCrop()
-    # update list of docs for current writer
-    data$df <- listAllDocs()
+    # Update missing docs
+    data$missing <- data$df[!file.exists(data$df$full_path),]
+    # Update processed docs
+    data$processed <- data$df[file.exists(data$df$full_path),]
   } else {
     output$error <- renderText({""})
     saveScan()
     saveCrop()
-    # update list of docs for current writer
-    data$df <- listAllDocs()
+    # Update missing docs
+    data$missing <- data$df[!file.exists(data$df$full_path),]
+    # Update processed docs
+    data$processed <- data$df[file.exists(data$df$full_path),]
   }
 })
 
@@ -805,6 +821,8 @@ lookupInitials <- function(writer){
   return(initials)
 }
 
+#HELPER FUNCTION: listAllDocs
+# Make a dataframe of all document names and file paths for the current writer
 listAllDocs <- function(){
   # create a list of every document that a writer should have
   
@@ -850,19 +868,26 @@ listAllDocs <- function(){
   return(df)
 }
 
-output$docs_missing <- renderDT({
-  # Filter for missing docs
-  missing <- data$df[!file.exists(data$df$full_path),]
-  # Select columns
-  missing[,c("doc_type", "file")]
-  })
-
-output$docs_processed <- renderDT({
-  # Filter for processed docs
-  processed <- data$df[file.exists(data$df$full_path),]
-  # Select columns
-  processed[,c("doc_type", "file")]
+#BUTTON: refresh data check tabls
+observeEvent(input$refresh, {
+  # Update missing docs
+  data$missing <- data$df[!file.exists(data$df$full_path),]
+  # Update processed docs
+  data$processed <- data$df[file.exists(data$df$full_path),]
 })
+
+#RENDER: missing documents
+output$docs_missing <- renderDT({
+  # Select columns
+  data$missing[,c("doc_type", "file")]
+})
+
+#RENDER processed documents
+output$docs_processed <- renderDT({
+  # Select columns
+  data$processed[,c("doc_type", "file")]
+})
+
 
 # Testing -----------------------------------------------------------------
 output$csv_path <- renderText({qr$csv_path})

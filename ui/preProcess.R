@@ -138,6 +138,10 @@ tabPanel("Pre-process",
                                           imageOutput("preprocess_plot_masked", brush = brushOpts(id = "preprocess_plot_brush", resetOnNew = TRUE))
                                  ),
                                  tabPanel("Data Checks",
+                                          br(),
+                                          actionButton("refresh", label = icon("refresh")),
+                                          br(),
+                                          
                                           h4("Missing Documents"),
                                           DTOutput("docs_missing"),
                                           h4("Processed Documents"),
