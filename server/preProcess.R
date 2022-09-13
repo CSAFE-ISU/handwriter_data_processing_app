@@ -242,37 +242,54 @@ saveResponses <- function(){
 }
 
 #HELPER FUNCTION: addMetadata
+# Everytime a user clicks saveCrop or saveSurvey, the app checks to see if all
+# docs for the current writer have been processed. If they have, the app runs 
+# the addMetadata function to copy the current writer's survey responses from 
+# survey_responses.csv and add them to metadata.csv.
 addMetadata <- function(){
+  # return error if current writer is missing documents
   if (nrow(data$missing) > 0){
     output$error <- renderText({"This writer cannot be added to the metadata file because one or more files are missing."})
-  } else {
-    output$error <- renderText({""})
-    
-    # get writer id 
-    id <- stringr::str_extract(qr$writer, "\\d+")
-    id <- as.integer(id)
-    
-    # load survey responses spreadsheet
-    qr$master_name <- "survey_responses.csv"
-    qr$master_path <- file.path(values$main_dir, "Stage3_Survey_Data", "Spreadsheets", qr$master_name)
-    df <- read.csv(qr$master_path)
-    
-    # filter for writer 
-    df <- df[df$WID == id,]
-    
-    # load metadata spreadsheet
-    qr$metadata_name <- "metadata.csv"
-    qr$metadata_path <- file.path(dirname(qr$master_path), qr$metadata_name)
-    if (file.exists(qr$metadata_path)){
-      metadata <- read.csv(qr$metadata_path)
-      # add to metadata
-      metadata <- rbind(metadata, df)
-    } else {
-      metadata <- df
-    }
-    
-    write.csv(metadata, file = qr$master_path, row.names = FALSE)
+    return()
   }
+  
+  # clear error message
+  output$error <- renderText({""})
+  
+  # get writer id 
+  id <- stringr::str_extract(qr$writer, "\\d+")
+  id <- as.integer(id)
+  
+  # load survey responses spreadsheet
+  qr$master_name <- "survey_responses.csv"
+  qr$master_path <- file.path(values$main_dir, "Stage3_Survey_Data", "Spreadsheets", qr$master_name)
+  df <- read.csv(qr$master_path)
+  
+  # filter for writer 
+  df <- df[df$WID == id,]
+  
+  # format file path
+  qr$metadata_name <- "metadata.csv"
+  qr$metadata_path <- file.path(dirname(qr$master_path), qr$metadata_name)
+
+  # load or create metadata spreadsheet
+  if (file.exists(qr$metadata_path)){   
+    metadata <- read.csv(qr$metadata_path)
+    # add to metadata
+    metadata <- rbind(metadata, df)
+    
+    # check to make sure that writer isn't already in the spreadsheet
+    check <- metadata[metadata$WID == id,]
+    if (nrow(check) > 0){
+      output$error <- renderText({"This writer has already been added to metadata.csv."})
+      return()
+    }
+  } else {
+    # create metadata
+    metadata <- df
+  }
+  
+  write.csv(metadata, file = qr$metadata_path, row.names = FALSE)
 }
 
 #UPDATE: survey values
