@@ -13,10 +13,8 @@ shinyjs::disable("save_docs")
 shinyjs::disable("save_survey")
 shinyjs::disable("refresh")
 
-# create reactive values
-values <- reactiveValues()
-
-# read in sample image
+# load sample image
+values <- reactiveValues()   # stores image and related info
 image <- magick::image_read("images/samplewriting.png")
 values$image <- image 
 values$uploaded_image <- image
@@ -45,18 +43,54 @@ qr$code <- NULL
 data <- reactiveValues()
 data$df <- data.frame(matrix(nrow=0, ncol=3,dimnames=list(NULL, c("full_path", "doc_type", "file"))))
 
+# survey responses
+survey <- reactiveValues(
+  # all surveys
+  df = data.frame(
+    "WID" = "",
+    "Session" = "",
+    "Initials" = "",
+    "Location" = "",
+    "Time" = "",
+    "Date" = ""),
+  # survey1 only
+  df1 = data.frame(
+    "ThirdGradeLoc" = NA,
+    "Age" = NA,
+    "Language" = NA,
+    "Gender" = NA,
+    "Other" = NA,
+    "Ethnicity" = NA,
+    "Edu" = NA,
+    "Hand" = NA
+  )
+)
+
+# paths
+paths <- reactiveValues()
+
 # main directory based on OS (Darwin = Mac)
 switch(Sys.info()[['sysname']],
-       Darwin = {values$main_dir = "/Volumes/lss/research/csafe-handwriting-irb/Data_Processing_App_Testing"},
+       Darwin = {paths$main_dir = "/Volumes/lss/research/csafe-handwriting-irb/Data_Processing_App_Testing"},
        Windows = {
          # Check whether csafe-handwriting-irb is a mounted folder
          if (dir.exists("/lss/research/csafe-handwriting-irb/Data_Processing_App_Testing")){
-           values$main_dir = "/lss/research/csafe-handwriting-irb/Data_Processing_App_Testing"
+           paths$main_dir = "/lss/research/csafe-handwriting-irb/Data_Processing_App_Testing"
          } else if (dir.exists("Y:/Data_Processing_App_Testing")){
-           values$main_dir = "/lss/research/csafe-handwriting-irb/Data_Processing_App_Testing"
+           paths$main_dir = "/lss/research/csafe-handwriting-irb/Data_Processing_App_Testing"
          }
        },
 )
+
+# store sub-directory paths within main directory
+observe({
+  paths$survey_scans <- file.path(paths$main_dir, "Stage3_Survey_Data", "Sorted")
+  paths$survey_spreadsheets <- file.path(paths$main_dir, "Stage3_Survey_Data", "Spreadsheets")
+  paths$prompt_scans <- file.path(paths$main_dir, "Stage2_Sorted", "Writing")
+  paths$prompt_crops <- file.path(paths$main_dir, "Stage4_Cropped", "Writing")
+  paths$signature_scans <- file.path(paths$main_dir, "Stage2_Sorted", "Signatures")
+  paths$signature_crops <- file.path(paths$main_dir, "Stage4_Cropped", "Signatures")
+})
 
 # create subdirectory temp in images 
 if (!dir.exists(file.path("images", "temp"))){
@@ -189,29 +223,6 @@ saveScan <- function(){
 
 
 # Survey -----------------------------------------------------------------
-#CREATE: survey reactive values
-survey <- reactiveValues(
-  # all surveys
-  df = data.frame(
-    "WID" = "",
-    "Session" = "",
-    "Initials" = "",
-    "Location" = "",
-    "Time" = "",
-    "Date" = ""),
-  # survey1 only
-  df1 = data.frame(
-    "ThirdGradeLoc" = NA,
-    "Age" = NA,
-    "Language" = NA,
-    "Gender" = NA,
-    "Other" = NA,
-    "Ethnicity" = NA,
-    "Edu" = NA,
-    "Hand" = NA
-  )
-)
-
 #HELPER FUNCTION: saveResponses
 saveResponses <- function(){
   # make writer folder for csv
@@ -232,7 +243,7 @@ saveResponses <- function(){
   
   # load or create master speadsheet
   qr$master_name <- "survey_responses.csv"
-  qr$master_path <- file.path(values$main_dir, "Stage3_Survey_Data", "Spreadsheets", qr$master_name)
+  qr$master_path <- file.path(paths$survey_spreadsheets, qr$master_name)
   if (file.exists(qr$master_path)){
     # load
     master <- read.csv(qr$master_path)
@@ -268,7 +279,7 @@ addMetadata <- function(){
   
   # load survey responses spreadsheet
   qr$master_name <- "survey_responses.csv"
-  qr$master_path <- file.path(values$main_dir, "Stage3_Survey_Data", "Spreadsheets", qr$master_name)
+  qr$master_path <- file.path(paths$survey_spreadsheets, qr$master_name)
   df <- read.csv(qr$master_path)
   
   # filter for writer 
@@ -406,7 +417,7 @@ makeDocNames <- function(){
   if (values$doc_type == "survey"){
     # scan
     qr$scan_name <- paste0(qr$writer,"_survey",qr$session, ".png")
-    qr$scan_path <- file.path(values$main_dir, "Stage3_Survey_Data", "Sorted", qr$writer, qr$scan_name)
+    qr$scan_path <- file.path(paths$survey_scans, qr$writer, qr$scan_name)
     
     # crop
     qr$crop_name <- NULL
@@ -414,7 +425,7 @@ makeDocNames <- function(){
     
     # csv
     qr$csv_name <- paste0(qr$writer, "_survey", qr$session, ".csv")
-    qr$csv_path <- file.path(values$main_dir, "Stage3_Survey_Data", "Spreadsheets", qr$writer, qr$csv_name)
+    qr$csv_path <- file.path(paths$survey_spreadsheets, qr$writer, qr$csv_name)
   } 
   
   # format writing
@@ -423,11 +434,11 @@ makeDocNames <- function(){
     session <- stringr::str_pad(qr$session, width = 2, side = "left", pad = 0)
     repetition <- stringr::str_pad(qr$repetition, width = 2, side = "left", pad = 0)
     qr$scan_name <- paste0(qr$writer,"_s", session, "_p", qr$prompt, "_r", repetition, "_scan.png")
-    qr$scan_path <- file.path(values$main_dir, "Stage2_Sorted", "Writing", qr$writer, qr$scan_name)
+    qr$scan_path <- file.path(paths$prompt_scans, qr$writer, qr$scan_name)
     
     # cropped
     qr$crop_name <- paste0(qr$writer,"_s", session, "_p", qr$prompt, "_r", repetition, ".png")
-    qr$crop_path <- file.path(values$main_dir, "Stage4_Cropped", "Writing", qr$writer, qr$crop_name)
+    qr$crop_path <- file.path(paths$prompt_crops, qr$writer, qr$crop_name)
   
     # csv
     qr$csv_name <- NULL
@@ -438,11 +449,11 @@ makeDocNames <- function(){
   if (values$doc_type == "signature"){
     # scan
     qr$scan_name <- paste0(qr$writer,"_", qr$initials, "_scan.png")
-    qr$scan_path <- file.path(values$main_dir, "Stage2_Sorted", "Signatures", qr$writer, qr$scan_name)
+    qr$scan_path <- file.path(paths$signature_scans, qr$writer, qr$scan_name)
     
     # cropped
     qr$crop_name <- paste0(qr$writer,"_", qr$initials, ".png")
-    qr$crop_path <- file.path(values$main_dir, "Stage4_Cropped", "Signatures", qr$writer, qr$crop_name)
+    qr$crop_path <- file.path(paths$signature_crops, qr$writer, qr$crop_name)
     
     # csv
     qr$csv_name <- NULL
@@ -910,19 +921,19 @@ listAllDocs <- function(){
   # create a list of every document that a writer should have
   
   # survey csv files
-  survey_csvs <- file.path(values$main_dir, "Stage3_Survey_Data", "Spreadsheets", qr$writer, paste0(qr$writer, "_survey", 1:3, ".csv"))
+  survey_csvs <- file.path(paths$survey_spreadsheets, qr$writer, paste0(qr$writer, "_survey", 1:3, ".csv"))
   
   # survey scan files
-  survey_scans <- file.path(values$main_dir, "Stage3_Survey_Data", "Sorted", qr$writer, paste0(qr$writer, "_survey", 1:3, ".png"))
+  survey_scans <- file.path(paths$survey_scans, qr$writer, paste0(qr$writer, "_survey", 1:3, ".png"))
   
   # get signature initials
   initials <- lookupInitials(writer = qr$writer)
   
   # signature scans 
-  sig_scans <- file.path(values$main_dir, "Stage2_Sorted", "Signatures", qr$writer, paste0(qr$writer, "_", initials, "_scan.png"))
+  sig_scans <- file.path(paths$signature_scans, qr$writer, paste0(qr$writer, "_", initials, "_scan.png"))
   
   # signature crops
-  sig_crops <- file.path(values$main_dir, "Stage4_Cropped", "Signatures", qr$writer, paste0(qr$writer, "_", initials, ".png"))
+  sig_crops <- file.path(paths$signature_crops, qr$writer, paste0(qr$writer, "_", initials, ".png"))
   
   # writing scans and crops
   writing_scans <- writing_crops <- c()
@@ -932,8 +943,8 @@ listAllDocs <- function(){
   for (i in 1:3){
     for (j in 1:3){
       for (k in 1:3){
-        temp_scan <- file.path(values$main_dir, "Stage2_Sorted", "Writing", qr$writer, paste0(qr$writer, s[i], p[j], r[k], "_scan.png"))
-        temp_crop <- file.path(values$main_dir, "Stage4_Cropped", "Writing", qr$writer, paste0(qr$writer, s[i], p[j], r[k], ".png"))
+        temp_scan <- file.path(paths$prompt_scans, qr$writer, paste0(qr$writer, s[i], p[j], r[k], "_scan.png"))
+        temp_crop <- file.path(paths$prompt_crops, qr$writer, paste0(qr$writer, s[i], p[j], r[k], ".png"))
         writing_scans <- c(writing_scans, temp_scan)
         writing_crops <- c(writing_crops, temp_crop)
       }
