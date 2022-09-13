@@ -139,7 +139,7 @@ tabPanel("Process",
                                  ),
                                  tabPanel("Data Checks",
                                           br(),
-                                          actionButton("refresh", label = icon("refresh")),
+                                          actionButton("refresh", label = icon("arrows-rotate")),
                                           br(),
                                           
                                           h4("Missing Documents"),

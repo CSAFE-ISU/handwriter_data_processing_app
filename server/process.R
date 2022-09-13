@@ -9,7 +9,9 @@ shinyjs::disable("undo_crop")
 shinyjs::disable("save_mask")
 shinyjs::disable("reset_mask") 
 shinyjs::disable("undo_mask")
-shinyjs::disable("save_scan")
+shinyjs::disable("save_docs")
+shinyjs::disable("save_survey")
+shinyjs::disable("refresh")
 
 # create reactive values
 values <- reactiveValues()
@@ -26,7 +28,6 @@ values$doc_type <- "default"
 # image info
 info <- image_info(image)
 values$info <- info
-values$dimensions <- paste0(info$width, 'x', info$height)
 
 # masking
 mask_list_df <- data.frame(matrix(ncol=6, nrow=0))
@@ -66,8 +67,9 @@ if (!dir.exists(file.path("images", "temp"))){
 # Image -------------------------------------------------------------------
 #UPLOAD: document
 observeEvent(input$upload, {
-  # turn off save scan button
-  shinyjs::disable("save_scan")
+  # turn off save buttons
+  shinyjs::disable("save_docs")
+  shinyjs::disable("save_survey")
   
   # update upload_path
   if (length(input$upload$datapath)){
@@ -124,14 +126,18 @@ observeEvent(input$upload, {
     splitQR(qr$code)
     # format document names
     makeDocNames()
-    # enable save scan button
-    shinyjs::enable("save_scan")
+    
     # get list of docs for current writer
     data$df <- listAllDocs()
     # Find missing docs
     data$missing <- data$df[!file.exists(data$df$full_path),]
     # Find processed docs
     data$processed <- data$df[file.exists(data$df$full_path),]
+    
+    # enable buttons
+    shinyjs::enable("save_docs")  # on sidebar
+    shinyjs::enable("save_survey")  # on sidebar
+    shinyjs::enable("refresh")  # on data checks tab
   }
   
   # extract number from writer id for survey response table
@@ -448,7 +454,6 @@ makeDocNames <- function(){
 output$upload_path <- renderText({paste0("Upload path: ", values$upload_path)})
 output$current_path <- renderText({paste0("Current path: ", values$current_path)})
 output$image_name <- renderText({paste0("Name: ", values$image_name)})
-output$dimensions <- renderText({paste0("Dimensions: ", values$dimensions)})
 
 #RENDER: qr code info
 output$qr <- renderText({paste0("QR Code: ", qr$code)})
@@ -491,14 +496,17 @@ observeEvent(input$select_qr, {
       splitQR(qr$code)
       # format document names
       makeDocNames()
-      # enable save scan button
-      shinyjs::enable("save_scan")
       # get list of docs for current writer
       data$df <- listAllDocs()
       # Update missing docs
       data$missing <- data$df[!file.exists(data$df$full_path),]
       # Update processed docs
       data$processed <- data$df[file.exists(data$df$full_path),]
+      
+      # enable save buttons
+      shinyjs::enable("save_docs")  # on sidebar
+      shinyjs::enable("save_survey")  # on sidebar
+      shinyjs::enable("refresh")  # on data checks tab
     }
   }})
 
@@ -524,7 +532,6 @@ observeEvent(input$reset_crop, {
   
   #Reset dimensions
   values$info <- image_info(values$image)
-  values$dimensions <- paste0(values$info$width, 'x', values$info$height)
   shinyjs::disable("reset_crop"); shinyjs::disable("undo_crop")
   values$current_path <- values$upload_path
   
@@ -557,7 +564,6 @@ observeEvent(input$undo_crop, {
   
   #Reset dimensions
   values$info <- image_info(values$image)
-  values$dimensions <- paste0(values$info$width, 'x', values$info$height)
   if(length(values$crop_list) == 1){
     shinyjs::disable("reset_crop"); shinyjs::disable("undo_crop")
   }
@@ -595,8 +601,7 @@ observeEvent(input$crop, {
     
     values$info <- image_info(values$image)
     info <- image_info(values$image)
-    values$dimensions <- paste0(info$width, 'x', info$height)
-    
+
     values$crop_list <- append(values$crop_list, values$image)
     message(paste0('crop_list:', values$crop_list, '\n'))
     
@@ -946,7 +951,7 @@ listAllDocs <- function(){
   return(df)
 }
 
-#BUTTON: refresh data check tabls
+#BUTTON: refresh data check tables
 observeEvent(input$refresh, {
   # Update missing docs
   data$missing <- data$df[!file.exists(data$df$full_path),]
