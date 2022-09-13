@@ -1,9 +1,9 @@
 #PREPROCESS TAB
 
-tabPanel("Pre-process", 
+tabPanel("Process", 
          sidebarLayout(
            sidebarPanel(width = 4,
-                        h2("Pre-process"),
+                        h2("Process"),
                         fileInput("upload", "Choose a new document to process", accept = c('image/png')),
                         hr(),
                         h4("Current document:"),

@@ -8,7 +8,7 @@ server <- function(input, output, session) {
   #========================================================
   
   source(file.path("server", "tooltips.R"), local = TRUE)$value
-  source(file.path("server", "preProcess.R"), local = TRUE)$value
+  source(file.path("server", "process.R"), local = TRUE)$value
   source(file.path("server", "dataIntegrityChecks.R"), local = TRUE)$value
   
 }

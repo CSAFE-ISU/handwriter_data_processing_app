@@ -83,7 +83,7 @@ observeEvent(input$upload, {
   updateTextInput(session, "response_initials", value = "")
   updateTextInput(session, "response_location", value = "")
   updateRadioButtons(session, "response_time", selected = "a. Early morning (earlier than 9:30am)")
-  updateDateInput(session, "response_date", value = NA)
+  updateDateInput(session, "response_date", value = NULL)
   updateTextInput(session, "response_3rd_Grade", value = "")
   updateRadioButtons(session, "response_age", selected = "a. 18-24")
   updateRadioButtons(session, "response_language", selected = "yes")
