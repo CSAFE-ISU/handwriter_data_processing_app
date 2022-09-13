@@ -3,7 +3,6 @@ server <- function(input, output, session) {
   #Tooltips
   source(file.path("server", "tooltips.R"), local = TRUE)$value
   
-  
   #========================================================
   #================ SOURCE SERVER CODE ====================
   #========================================================
