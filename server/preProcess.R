@@ -46,8 +46,16 @@ data$df <- data.frame(matrix(nrow=0, ncol=3,dimnames=list(NULL, c("full_path", "
 
 # main directory based on OS (Darwin = Mac)
 switch(Sys.info()[['sysname']],
-       Windows = {values$main_dir = "/lss/research/csafe-handwriting-irb/Data_Processing_App_Testing"},
-       Darwin = {values$main_dir = "/Volumes/lss/research/csafe-handwriting-irb/Data_Processing_App_Testing"})
+       Darwin = {values$main_dir = "/Volumes/lss/research/csafe-handwriting-irb/Data_Processing_App_Testing"},
+       Windows = {
+         # Check whether csafe-handwriting-irb is a mounted folder
+         if (dir.exists("/lss/research/csafe-handwriting-irb/Data_Processing_App_Testing")){
+           values$main_dir = "/lss/research/csafe-handwriting-irb/Data_Processing_App_Testing"
+         } else if (dir.exists("Y:/Data_Processing_App_Testing")){
+           values$main_dir = "/lss/research/csafe-handwriting-irb/Data_Processing_App_Testing"
+         }
+       },
+)
 
 # create subdirectory temp in images 
 if (!dir.exists(file.path("images", "temp"))){
