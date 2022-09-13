@@ -217,6 +217,8 @@ saveResponses <- function(){
   write.csv(df, file = qr$csv_path, row.names = FALSE)
   
   # load or create master speadsheet
+  qr$master_name <- "survey_responses.csv"
+  qr$master_path <- file.path(values$main_dir, "Stage3_Survey_Data", "Spreadsheets", qr$master_name)
   if (file.exists(qr$master_path)){
     # load
     master <- read.csv(qr$master_path)
@@ -229,6 +231,40 @@ saveResponses <- function(){
   
   write.csv(master, file = qr$master_path, row.names = FALSE)
   
+}
+
+#HELPER FUNCTION: addMetadata
+addMetadata <- function(){
+  if (nrow(data$missing) > 0){
+    output$error <- renderText({"This writer cannot be added to the metadata file because one or more files are missing."})
+  } else {
+    output$error <- renderText({""})
+    
+    # get writer id 
+    id <- stringr::str_extract(qr$writer, "\\d+")
+    id <- as.integer(id)
+    
+    # load survey responses spreadsheet
+    qr$master_name <- "survey_responses.csv"
+    qr$master_path <- file.path(values$main_dir, "Stage3_Survey_Data", "Spreadsheets", qr$master_name)
+    df <- read.csv(qr$master_path)
+    
+    # filter for writer 
+    df <- df[df$WID == id,]
+    
+    # load metadata spreadsheet
+    qr$metadata_name <- "metadata.csv"
+    qr$metadata_path <- file.path(dirname(qr$master_path), qr$metadata_name)
+    if (file.exists(qr$metadata_path)){
+      metadata <- read.csv(qr$metadata_path)
+      # add to metadata
+      metadata <- rbind(metadata, df)
+    } else {
+      metadata <- df
+    }
+    
+    write.csv(metadata, file = qr$master_path, row.names = FALSE)
+  }
 }
 
 #UPDATE: survey values
@@ -283,6 +319,11 @@ observeEvent(input$save_survey, {
     data$missing <- data$df[!file.exists(data$df$full_path),]
     # Update processed docs
     data$processed <- data$df[file.exists(data$df$full_path),]
+  }
+  
+  # Add responses to metadata if all files for the writer have been processed
+  if (nrow(data$missing) == 0){
+    addMetadata()
   }
 })
 
@@ -343,10 +384,6 @@ makeDocNames <- function(){
     # csv
     qr$csv_name <- paste0(qr$writer, "_survey", qr$session, ".csv")
     qr$csv_path <- file.path(values$main_dir, "Stage3_Survey_Data", "Spreadsheets", qr$writer, qr$csv_name)
-    
-    # master spreadsheet
-    qr$master_name <- "survey_responses.csv"
-    qr$master_path <- file.path(values$main_dir, "Stage3_Survey_Data", "Spreadsheets", qr$master_name)
   } 
   
   # format writing
@@ -364,10 +401,6 @@ makeDocNames <- function(){
     # csv
     qr$csv_name <- NULL
     qr$csv_path <- NULL
-    
-    # master spreadsheet
-    qr$master_name <- NULL
-    qr$master_path <- NULL
   }
   
   # format signature scan
@@ -383,10 +416,6 @@ makeDocNames <- function(){
     # csv
     qr$csv_name <- NULL
     qr$csv_path <- NULL
-    
-    # master spreadsheet
-    qr$master_name <- NULL
-    qr$master_path <- NULL
   }
 }
 
@@ -441,6 +470,10 @@ observeEvent(input$select_qr, {
       shinyjs::enable("save_scan")
       # get list of docs for current writer
       data$df <- listAllDocs()
+      # Update missing docs
+      data$missing <- data$df[!file.exists(data$df$full_path),]
+      # Update processed docs
+      data$processed <- data$df[file.exists(data$df$full_path),]
     }
   }})
 
@@ -573,6 +606,11 @@ observeEvent(input$save_docs, {
     data$missing <- data$df[!file.exists(data$df$full_path),]
     # Update processed docs
     data$processed <- data$df[file.exists(data$df$full_path),]
+  }
+  
+  # Add responses to metadata if all files for the writer have been processed
+  if (nrow(data$missing) == 0){
+    addMetadata()
   }
 })
 
