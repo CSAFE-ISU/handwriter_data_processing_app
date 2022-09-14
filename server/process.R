@@ -217,7 +217,6 @@ saveScan <- function(){
   
   # save original scan
   values$uploaded_image %>% 
-    image_rotate(input$rotation) %>% 
     image_write(path=qr$scan_path, format = 'png')
 }
 
@@ -525,31 +524,20 @@ observeEvent(input$select_qr, {
 # Rotation ----------------------------------------------------------------
 #BUTTON: rotate left
 observeEvent(input$left, {
+  # clear error
   output$error <- renderText({""})
-  updateSliderInput(session, "rotation", value = input$rotation - 1)
+  
+  # rotate
+  updateSliderInput(session, "rotation", value = input$rotation - 0.25)
 })
 
 #BUTTON: rotate right
 observeEvent(input$right, {
+  # clear error
   output$error <- renderText({""})
-  updateSliderInput(session, "rotation", value = input$rotation + 1)
-})
-
-#BUTTON: reset crop
-observeEvent(input$reset_crop, {
-  output$error <- renderText({""})
-  values$image <- values$uploaded_image
-  values$crop_list <- list(values$image)
   
-  #Reset dimensions
-  values$info <- image_info(values$image)
-  shinyjs::disable("reset_crop"); shinyjs::disable("undo_crop")
-  values$current_path <- values$upload_path
-  
-  #Reset session values
-  values$session_width = session$clientData$output_preprocess_plot_width
-  values$session_scale = values$session_width / values$info$width
-  values$session_inv_scale = values$info$width / values$session_width
+  # rotate
+  updateSliderInput(session, "rotation", value = input$rotation + 0.25)
 })
 
 
@@ -586,6 +574,23 @@ observeEvent(input$undo_crop, {
   
   # change to previous image
   image_write(values$image, file.path("images", "temp", "tmp.png")); values$current_path <- file.path("images", "temp", "tmp.png")
+})
+
+#BUTTON: reset crop
+observeEvent(input$reset_crop, {
+  output$error <- renderText({""})
+  values$image <- values$uploaded_image
+  values$crop_list <- list(values$image)
+  
+  #Reset dimensions
+  values$info <- image_info(values$image)
+  shinyjs::disable("reset_crop"); shinyjs::disable("undo_crop")
+  values$current_path <- values$upload_path
+  
+  #Reset session values
+  values$session_width = session$clientData$output_preprocess_plot_width
+  values$session_scale = values$session_width / values$info$width
+  values$session_inv_scale = values$info$width / values$session_width
 })
 
 #BUTTON: crop
@@ -984,8 +989,9 @@ output$docs_processed <- renderDT({
 
 
 # Testing -----------------------------------------------------------------
-output$csv_path <- renderText({qr$csv_path})
-output$scan_name <- renderText({paste0("Scan name: ", qr$scan_name)})
-output$scan_path <- renderText({paste0("Scan path: ", qr$scan_path)})
-output$crop_name <- renderText({paste0("Crop name: ", qr$crop_name)})
-output$crop_path <- renderText({paste0("Crop path: ", qr$crop_path)})
+# output$csv_path <- renderText({qr$csv_path})
+# output$scan_name <- renderText({paste0("Scan name: ", qr$scan_name)})
+# output$scan_path <- renderText({paste0("Scan path: ", qr$scan_path)})
+# output$crop_name <- renderText({paste0("Crop name: ", qr$crop_name)})
+# output$crop_path <- renderText({paste0("Crop path: ", qr$crop_path)})
+output$session_inv_scale <- renderText({paste0("Inverse scale: ", values$session_inv_scale)})

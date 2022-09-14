@@ -10,6 +10,7 @@ tabPanel("Process",
                         fluidRow(column(width=11, offset=1, textOutput("qr"))),
                         fluidRow(column(width=11, offset=1, textOutput("doc_type"))),
                         fluidRow(column(width=11, offset=1, textOutput("writer"))),
+                        fluidRow(column(width=11, offset=1, textOutput("session_inv_scale"))),  # testing
                         
                         # Survey or writing only panel
                         conditionalPanel(
@@ -40,7 +41,7 @@ tabPanel("Process",
                           h4("Rotate:"),
                           fluidRow(
                             column(width = 1, br(), actionButton("left", label = icon("angles-left", "fa-2xs"))),
-                            column(width = 8, offset = 1, sliderInput("rotation", "Rotate:", min = -180, max = 180, value = 0)), 
+                            column(width = 8, offset = 1, sliderInput("rotation", "Rotate:", min = -90, max = 90, value = 0, step=0.25)), 
                             column(width = 1, br(), actionButton("right", label = icon("angles-right", "fa-2xs"))),
                           ), 
                           hr(),
