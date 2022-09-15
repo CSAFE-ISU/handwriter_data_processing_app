@@ -77,7 +77,7 @@ switch(Sys.info()[['sysname']],
          if (dir.exists("/lss/research/csafe-handwriting-irb/Data_Processing_App_Testing")){
            paths$main_dir = "/lss/research/csafe-handwriting-irb/Data_Processing_App_Testing"
          } else if (dir.exists("Y:/Data_Processing_App_Testing")){
-           paths$main_dir = "/lss/research/csafe-handwriting-irb/Data_Processing_App_Testing"
+           paths$main_dir = "Y:/Data_Processing_App_Testing"
          }
        },
 )
