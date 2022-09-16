@@ -116,18 +116,19 @@ observeEvent(input$upload, {
   data$df <- data.frame(matrix(nrow=0, ncol=3,dimnames=list(NULL, c("full_path", "doc_type", "file"))))
   
   # reset survey responses input boxes
-  updateTextInput(session, "response_initials", value = "")
-  updateTextInput(session, "response_location", value = "")
-  updateRadioButtons(session, "response_time", selected = "a. Early morning (earlier than 9:30am)")
+  updateTextInput(session, "response_initials", value = "NA")
+  updateTextInput(session, "response_location", value = "NA")
+  updateRadioButtons(session, "response_time", selected = "NA")
   updateDateInput(session, "response_date", value = NULL)
-  updateTextInput(session, "response_3rd_Grade", value = "")
-  updateRadioButtons(session, "response_age", selected = "a. 18-24")
-  updateRadioButtons(session, "response_language", selected = "yes")
-  updateRadioButtons(session, "response_gender", selected = "a. Female")
-  updateTextInput(session, "response_gender_other", value = "")
-  updateRadioButtons(session, "response_ethnicity", selected = "a. African American")
-  updateRadioButtons(session, "response_education_level", selected = "a. High school or less")
-  updateRadioButtons(session, "response_hand", selected = "a. Left")
+  updateRadioButtons(session, "response_date_na", selected = FALSE)
+  updateTextInput(session, "response_3rd_Grade", value = "NA")
+  updateRadioButtons(session, "response_age", selected = "NA")
+  updateRadioButtons(session, "response_language", selected = "NA")
+  updateRadioButtons(session, "response_gender", selected = "NA")
+  updateTextInput(session, "response_gender_other", value = "NA")
+  updateRadioButtons(session, "response_ethnicity", selected = "NA")
+  updateRadioButtons(session, "response_education_level", selected = "NA")
+  updateRadioButtons(session, "response_hand", selected = "NA")
   
   # read image
   if(endsWith(input$upload$datapath, "png")){
@@ -312,7 +313,20 @@ addMetadata <- function(){
 observeEvent(input$response_initials, {survey$df['Initials'] <- input$response_initials})
 observeEvent(input$response_location, {survey$df['Location'] <- input$response_location})
 observeEvent(input$response_time, {survey$df['Time'] <- input$response_time})
-observeEvent(input$response_date, {survey$df['Date'] <- as.character(input$response_date)})
+observeEvent(input$response_date, {
+  if (input$response_date_na){
+    survey$df['Date'] <- NA
+  } else {
+    survey$df['Date'] <- as.character(input$response_date)
+  }
+})
+observeEvent(input$response_date_na, {
+  if (input$response_date_na){
+    survey$df['Date'] <- NA
+  } else {
+    survey$df['Date'] <- as.character(input$response_date)
+  }
+})
 
 #UPDATE: survey1 only values
 observeEvent(input$response_3rd_grade, {survey$df1['ThirdGradeLoc'] <- input$response_3rd_grade})
@@ -994,4 +1008,4 @@ output$docs_processed <- renderDT({
 # output$scan_path <- renderText({paste0("Scan path: ", qr$scan_path)})
 # output$crop_name <- renderText({paste0("Crop name: ", qr$crop_name)})
 # output$crop_path <- renderText({paste0("Crop path: ", qr$crop_path)})
-output$session_inv_scale <- renderText({paste0("Inverse scale: ", values$session_inv_scale)})
+# output$session_inv_scale <- renderText({paste0("Inverse scale: ", values$session_inv_scale)})
