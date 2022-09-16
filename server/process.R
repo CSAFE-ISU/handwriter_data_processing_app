@@ -351,28 +351,34 @@ output$survey1_table <- renderTable({
 #SAVE: survey
 observeEvent(input$save_survey, {
   if (file.exists(qr$scan_path) && file.exists(qr$csv_path)){
-    output$error <- renderText({paste0("Scan and csv already exist. Manually delete files if you want to save an updated version.")})
+    showNotification("Scan and csv file already exist. \n 
+                     Manually delete if you want to save updated versions.")
   } else if (!file.exists(qr$scan_path) && file.exists(qr$csv_path)) { 
-    output$error <- renderText({"Csv already exists. Manually delete file if you want to save an updated version."})
+    # save scan only
     saveScan()
-    # Update missing docs
+    showNotification("Saved scan. Csv file already exists. \n
+                     Manually delete the scan if you want to save an updated version.")
+    
+    # Update missing and processed docs
     data$missing <- data$df[!file.exists(data$df$full_path),]
-    # Update processed docs
     data$processed <- data$df[file.exists(data$df$full_path),]
   } else if (file.exists(qr$scan_path) && !file.exists(qr$csv_path)){
-    output$error <- renderText({"Scan already exists. Manually delete file if you want to save an updated version."})
+    # save csv only
     saveResponses()
-    # Update missing docs
+    showNotification("Saved csv file. Scan already exists. \n 
+                     Manually delete the scan if you want to save an updated version.")
+    
+    # Update missing and processed docs
     data$missing <- data$df[!file.exists(data$df$full_path),]
-    # Update processed docs
     data$processed <- data$df[file.exists(data$df$full_path),]
   } else {
-    output$error <- renderText({""})
+    # save scan and csv
     saveScan()
     saveResponses()
-    # Update missing docs
+    showNotification("Saved scan and csv file.")
+    
+    # Update missing and processed docs
     data$missing <- data$df[!file.exists(data$df$full_path),]
-    # Update processed docs
     data$processed <- data$df[file.exists(data$df$full_path),]
   }
   
@@ -643,28 +649,34 @@ observeEvent(input$crop, {
 observeEvent(input$save_docs, {
   # Return error if cropped document already exists. Otherwise, save the cropped document.
   if (file.exists(qr$scan_path) && file.exists(qr$crop_path)){
-    output$error <- renderText({paste0("Scan and cropped documents already exist. Manually delete files if you want to save a updated versions.")})
+    showNotification("Scan and cropped documents already exist. \n 
+                     Manually delete files if you want to save updated versions.")
   } else if (!file.exists(qr$scan_path) && file.exists(qr$crop_path)) { 
-    output$error <- renderText({"Cropped document already exists. Manually delete file if you want to save an updated version."})
+    # save scan only
     saveScan()
-    # Update missing docs
+    showNotification("Saved scan. Cropped document already exists. \n 
+                      Manually delete cropped document if you want to save an updated version.")
+    
+    # Update missing and processed docs
     data$missing <- data$df[!file.exists(data$df$full_path),]
-    # Update processed docs
     data$processed <- data$df[file.exists(data$df$full_path),]
   } else if (file.exists(qr$scan_path) && !file.exists(qr$crop_path)){
-    output$error <- renderText({"Scan already exists. Manually delete file if you want to save an updated version."})
+    # save crop only
     saveCrop()
-    # Update missing docs
+    showNotification("Saved cropped document. Scan already exists. \n 
+                      Manually delete scan if you want to save an updated version.")
+    
+    # Update missing and processed docs
     data$missing <- data$df[!file.exists(data$df$full_path),]
-    # Update processed docs
     data$processed <- data$df[file.exists(data$df$full_path),]
   } else {
-    output$error <- renderText({""})
+    # save scan and crop
     saveScan()
     saveCrop()
-    # Update missing docs
+    showNotification("Saved scan and cropped document.")
+    
+    # Update missing and processed docs
     data$missing <- data$df[!file.exists(data$df$full_path),]
-    # Update processed docs
     data$processed <- data$df[file.exists(data$df$full_path),]
   }
   
