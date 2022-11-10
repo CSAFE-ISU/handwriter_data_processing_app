@@ -3,7 +3,6 @@ ui <- shinyUI({
     shinyjs::useShinyjs(),
     shinyBS:::shinyBSDep,
     add_busy_spinner(spin = "fading-circle"),
-    #span(textOutput("error"), style="color:red"),
     tags$head(tags$script(src = "message-handler.js"), 
               tags$style(HTML("input[type=\"number\"] {width: 80px;}")),
               tags$style(HTML("hr {border-top: 1px solid #000000;}")),

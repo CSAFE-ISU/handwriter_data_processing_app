@@ -71,13 +71,13 @@ paths <- reactiveValues()
 
 # main directory based on OS (Darwin = Mac)
 switch(Sys.info()[['sysname']],
-       Darwin = {paths$main_dir = "/Volumes/lss/research/csafe-handwriting-irb/Data_Processing_App_Testing"},
+       Darwin = {paths$main_dir = "/Volumes/lss/research/csafe-handwriting-irb/Data_Processing"},
        Windows = {
          # Check whether csafe-handwriting-irb is a mounted folder
-         if (dir.exists("/lss/research/csafe-handwriting-irb/Data_Processing_App_Testing")){
-           paths$main_dir = "/lss/research/csafe-handwriting-irb/Data_Processing_App_Testing"
-         } else if (dir.exists("Y:/Data_Processing_App_Testing")){
-           paths$main_dir = "Y:/Data_Processing_App_Testing"
+         if (dir.exists("/lss/research/csafe-handwriting-irb/Data_Processing")){
+           paths$main_dir = "/lss/research/csafe-handwriting-irb/Data_Processing"
+         } else if (dir.exists("Y:/Data_Processing")){
+           paths$main_dir = "Y:/Data_Processing"
          }
        },
 )
