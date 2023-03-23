@@ -1,6 +1,6 @@
 #Shiny handwriter
 # devtools::install_github("CSAFE-ISU/handwriter")
-# devtools::install_github("brianwdavis/quadrangle", INSTALL_opts = "--no-multiarch")
+# devtools::install_github("CSAFE-ISU/quadrangle", INSTALL_opts = "--no-multiarch")
 
 library(magick)
 library(shiny)
